@@ -44,7 +44,7 @@ void Set_Motor_Speed(TIM_HandleTypeDef *htim,  side side, direction dir, speed_m
   }
 }
 
-void motor_full_stop(TIM_HandleTypeDef *htim){
+void Motor_full_stop(TIM_HandleTypeDef *htim){
   Set_Motor_Speed(htim, BOTH, BRAKE, STOP);
 }
 

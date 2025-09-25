@@ -34,7 +34,7 @@ void Motor_Init(TIM_HandleTypeDef *htim);
 
 void Set_Motor_Speed(TIM_HandleTypeDef *htim, side side, direction dir, speed_mode speed);
 
-void motor_full_stop(TIM_HandleTypeDef *htim);
+void Motor_full_stop(TIM_HandleTypeDef *htim);
 
 void Test_Speed_Settings(TIM_HandleTypeDef *htim, direction dir);
 

@@ -37,6 +37,8 @@ extern "C" {
 #include "mcutils.h"
 #include "ssd1306.h"
 #include "string.h"
+#include "printf.h"
+#include "printf_config.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
