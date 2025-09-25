@@ -36,6 +36,7 @@ extern "C" {
 #include "qmc5883.h"
 #include "mcutils.h"
 #include "ssd1306.h"
+#include "string.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -63,7 +64,7 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define M_PI 3.14159265358979323846
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

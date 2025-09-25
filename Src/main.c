@@ -45,6 +45,7 @@ I2C_HandleTypeDef hi2c1;
 TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart1;
+DMA_HandleTypeDef hdma_usart1_tx;
 
 /* USER CODE BEGIN PV */
 
@@ -53,6 +54,7 @@ UART_HandleTypeDef huart1;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_I2C1_Init(void);
@@ -98,43 +100,23 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Base_Start(&htim2);
-  Motor_Init(&htim2);
-  if (ssd1306_Init(&hi2c1) != 0) {
-    Error_Handler();
-  }
-  char msg_buffer[32];
-  ssd1306_SetCursor(2,20);
-  ssd1306_WriteString("INIT",Font_11x18,White);
-  ssd1306_UpdateScreen(&hi2c1);
-  HAL_Delay(500);
-  Test_Rotation(&htim2, DEAD_SLOW);
+
   /* USER CODE END 2 */
 
-  
+  /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  //I2C_Scan();
-  QMC5883_Init(&qmc_sensor, &hi2c1, QMC_Rate_50);
+
   while (1)
   {
-      if(QMC5883_ReadAverage(&qmc_sensor,50,5) == QMC_OK){
-
-          //printf("X: %d, Y: %d, Z: %d\r\nHeading: ", qmc_sensor.xaxis, qmc_sensor.yaxis, qmc_sensor.zaxis);
-          ssd1306_Fill(Black);
-          ssd1306_SetCursor(0, 0);
-          snprintf(msg_buffer, 32,"%ld.%03d",qmc_sensor.avg_heading_whole, qmc_sensor.avg_compass_decimal);
-          ssd1306_WriteString(msg_buffer, Font_11x18, White);
-          ssd1306_SetCursor(0,20);
-          snprintf(msg_buffer, 32,"%ld.%03d",qmc_sensor.avg_compass_whole, qmc_sensor.avg_compass_decimal);
-          ssd1306_WriteString(msg_buffer, Font_11x18, White);
-      }
-        ssd1306_UpdateScreen(&hi2c1);
-        /*end read QMC5883 ================================*/
-        HAL_Delay(100);
+    uint8_t data[] = "Hello\r\n";
+    HAL_UART_Transmit_DMA(&huart1, data, sizeof(data)-1);
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    HAL_Delay(1000);
 
 
     /* USER CODE END WHILE */
@@ -329,6 +311,22 @@ static void MX_USART1_UART_Init(void)
 }
 
 /**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -361,10 +359,10 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-int isSent = 1;
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+
+void DMA2_Streaml7_IRQHandler(void)
 {
-	isSent = 1;
+  HAL_DMA_IRQHandler(&hdma_usart1_tx);
 }
 /* USER CODE END 4 */
 
@@ -379,6 +377,8 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    HAL_Delay(300);
   }
   /* USER CODE END Error_Handler_Debug */
 }
