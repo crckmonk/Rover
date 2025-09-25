@@ -5,11 +5,15 @@
 
 extern UART_HandleTypeDef huart1;
 
+/*
+TODO: Replace with proper printf implementation 
+*/
+
 int __io_putchar(int ch)
 {
  uint8_t c[1];
  c[0] = ch & 0x00FF;
- HAL_UART_Transmit_DMA(&huart1, &*c, 1);
+ HAL_UART_Transmit(&huart1, &*c, 1, 10);
  return ch;
 }
 
