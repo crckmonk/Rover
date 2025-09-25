@@ -24,11 +24,12 @@ build/debug/printf.o: external/printf/printf.c external/printf/printf.h \
  Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c_ex.h \
  Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h \
  Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
+ Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h \
  Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h Inc/motor.h \
  Inc/qmc5883.h Inc/main.h Inc/mcutils.h Inc/ssd1306.h Inc/fonts.h \
- external/printf/printf.h external/printf/printf_config.h \
+ external/printf/printf.h external/printf/printf_config.h Inc/nrf24.h \
  external/printf/printf_config.h
 external/printf/printf.h:
 Inc/main.h:
@@ -59,6 +60,7 @@ Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c.h:
 Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_i2c_ex.h:
 Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:
 Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h:
+Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h:
 Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:
 Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
@@ -70,4 +72,5 @@ Inc/ssd1306.h:
 Inc/fonts.h:
 external/printf/printf.h:
 external/printf/printf_config.h:
+Inc/nrf24.h:
 external/printf/printf_config.h:

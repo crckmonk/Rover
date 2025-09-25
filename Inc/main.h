@@ -39,6 +39,7 @@ extern "C" {
 #include "string.h"
 #include "printf.h"
 #include "printf_config.h"
+#include "nrf24.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -66,6 +67,13 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define SPI1_CSN_Pin GPIO_PIN_4
+#define SPI1_CSN_GPIO_Port GPIOA
+#define NRF24_CE_Pin GPIO_PIN_0
+#define NRF24_CE_GPIO_Port GPIOB
+#define NRF24_IRQ_Pin GPIO_PIN_1
+#define NRF24_IRQ_GPIO_Port GPIOB
+#define NRF24_IRQ_EXTI_IRQn EXTI1_IRQn
 
 /* USER CODE BEGIN Private defines */
 
