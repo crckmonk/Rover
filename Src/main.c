@@ -32,7 +32,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 /* User Configurations */
-#define TX_MODE
+#define RX_MODE
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -107,20 +107,14 @@ int main(void)
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   MX_I2C1_Init();
-  MX_SPI1_Init();
+  MX_SPI1_Init(); 
   /* USER CODE BEGIN 2 */
-
-  uint8_t fifo_status = 0, tmp;
-  HAL_Delay(400);
-  #ifdef TX_MODE
-  nrf24_tx_init(2464, _1Mbps);
-  uint8_t tx_data[NRF24_PAYLOAD_LENGTH] = {0x30, 0x30, 0x30, 0x33, 0x34, 0x35, 0x36, 0x37};
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
-  #endif
+  char buf[32];
+  Motor_Init(&htim2);
+  ssd1306_Init(&hi2c1);
+  ssd1306_Print(&hi2c1,"INIT",1);
   #ifdef RX_MODE
   nrf24_rx_init(2464, _1Mbps);
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
-  HAL_Delay(300);
   #endif
   /* USER CODE END 2 */
 
@@ -129,22 +123,43 @@ int main(void)
 
   while (1)
   {
-    #ifdef TX_MODE
-    // change tx datas
-        for(uint8_t i= 0; i < NRF24_PAYLOAD_LENGTH; i++){
-            nrf24_tx_transmit(&tx_data[i]);
-          }
-        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-        HAL_Delay(1000);
-    #endif 
     #ifdef RX_MODE
     if(rx_new_data)
     {
         rx_new_data = 0;
         printf("RX DATA: %s\r\n",rx_data);
+        switch(rx_data[0]) {
+          case 0x41: // GO
+            ssd1306_Print(&hi2c1,"GO",1);
+            snprintf(buf, sizeof(buf), "%u<>%u", rx_data[1], rx_data[2]);
+            ssd1306_SetCursor(0,38);
+            ssd1306_WriteString(buf, Font_11x18, White);
+            ssd1306_UpdateScreen(&hi2c1);
+            Set_Motor_Speed(&htim2, LEFT, FORWARD, rx_data[1]);
+            Set_Motor_Speed(&htim2, RIGHT, FORWARD, rx_data[2]);
+            break;
+          case 0x42: // STOP
+            ssd1306_Print(&hi2c1,"STOP",1);
+            snprintf(buf, sizeof(buf), "%u<>%u", rx_data[1], rx_data[2]);
+            ssd1306_SetCursor(0,38);
+            ssd1306_WriteString(buf, Font_11x18, White);
+            ssd1306_UpdateScreen(&hi2c1);
+            Set_Motor_Speed(&htim2, BOTH, BRAKE, STOP);
+            break;
+          case 0x43: // RVS
+            ssd1306_Print(&hi2c1,"RVS",1);
+            snprintf(buf, sizeof(buf), "%u<>%u", rx_data[1], rx_data[2]);
+            ssd1306_SetCursor(0,38);
+            ssd1306_WriteString(buf, Font_11x18, White);
+            ssd1306_UpdateScreen(&hi2c1);
+            Set_Motor_Speed(&htim2, LEFT, REVERSE, rx_data[1]);
+            Set_Motor_Speed(&htim2, RIGHT, REVERSE, rx_data[2]);
+            break;
+        }
         HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     }
-    HAL_Delay(100);
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    HAL_Delay(50);
     #endif
 
     /* USER CODE END WHILE */

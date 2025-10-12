@@ -2,43 +2,43 @@
 
 void Motor_Init(TIM_HandleTypeDef *htim)
 {
-    HAL_TIM_PWM_Start(htim, PORT_FORWARD);
-    HAL_TIM_PWM_Start(htim, PORT_REVERSE);
-    HAL_TIM_PWM_Start(htim, STB_FORWARD);
-    HAL_TIM_PWM_Start(htim, STB_REVERSE);
-  __HAL_TIM_SET_COMPARE(htim, PORT_FORWARD, 0); 
-  __HAL_TIM_SET_COMPARE(htim, PORT_REVERSE, 0); 
-  __HAL_TIM_SET_COMPARE(htim, STB_FORWARD, 0); 
-  __HAL_TIM_SET_COMPARE(htim, STB_REVERSE, 0);  
+    HAL_TIM_PWM_Start(htim, LEFT_FORWARD);
+    HAL_TIM_PWM_Start(htim, LEFT_REVERSE);
+    HAL_TIM_PWM_Start(htim, RIGHT_FORWARD);
+    HAL_TIM_PWM_Start(htim, RIGHT_REVERSE);
+  __HAL_TIM_SET_COMPARE(htim, LEFT_FORWARD, 0); 
+  __HAL_TIM_SET_COMPARE(htim, LEFT_REVERSE, 0); 
+  __HAL_TIM_SET_COMPARE(htim, RIGHT_FORWARD, 0); 
+  __HAL_TIM_SET_COMPARE(htim, RIGHT_REVERSE, 0);  
 }
 
-void Set_Motor_Speed(TIM_HandleTypeDef *htim,  side side, direction dir, speed_mode speed)
+void Set_Motor_Speed(TIM_HandleTypeDef *htim,  side_e side, direction dir, uint8_t speed)
 {
-  if (side == PORT || side == BOTH){
+  if (side == LEFT || side == BOTH){
     switch(dir){
       case FORWARD:
-        __HAL_TIM_SET_COMPARE(htim, PORT_FORWARD, speed);
+        __HAL_TIM_SET_COMPARE(htim, LEFT_FORWARD, speed);
         break;
       case REVERSE: 
-        __HAL_TIM_SET_COMPARE(htim, PORT_REVERSE, speed);
+        __HAL_TIM_SET_COMPARE(htim, LEFT_REVERSE, speed);
         break;
       default:
-        __HAL_TIM_SET_COMPARE(htim, PORT_FORWARD, STOP);
-        __HAL_TIM_SET_COMPARE(htim, PORT_REVERSE, STOP);
+        __HAL_TIM_SET_COMPARE(htim, LEFT_FORWARD, STOP);
+        __HAL_TIM_SET_COMPARE(htim, LEFT_REVERSE, STOP);
         break;
     }
   }
-  if (side == STARBOARD || side == BOTH){
+  if (side == RIGHT || side == BOTH){
     switch(dir){
       case FORWARD:
-        __HAL_TIM_SET_COMPARE(htim, STB_FORWARD, speed);
+        __HAL_TIM_SET_COMPARE(htim, RIGHT_FORWARD, speed);
         break;
       case REVERSE: 
-        __HAL_TIM_SET_COMPARE(htim, STB_REVERSE, speed);
+        __HAL_TIM_SET_COMPARE(htim, RIGHT_REVERSE, speed);
         break;
       default:
-        __HAL_TIM_SET_COMPARE(htim, STB_FORWARD, STOP);
-        __HAL_TIM_SET_COMPARE(htim, STB_REVERSE, STOP);
+        __HAL_TIM_SET_COMPARE(htim, RIGHT_FORWARD, STOP);
+        __HAL_TIM_SET_COMPARE(htim, RIGHT_REVERSE, STOP);
         break;
     }
   }
@@ -59,9 +59,4 @@ void Test_Speed_Settings(TIM_HandleTypeDef *htim, direction dir){
   HAL_Delay(1000);
   Set_Motor_Speed(htim, BOTH, dir, STOP);
   HAL_Delay(1000);
-}
-
-void Test_Rotation(TIM_HandleTypeDef *htim, speed_mode speed){
-  Set_Motor_Speed(htim, STARBOARD, FORWARD, speed);
-  Set_Motor_Speed(htim, PORT, REVERSE, speed);
 }
