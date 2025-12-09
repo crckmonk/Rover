@@ -32,7 +32,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 /* User Configurations */
-#define RX_MODE
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,8 +49,22 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
+uint8_t TxBuffer[NRF24L01_PAYLOAD_LENGTH] = {0};
+uint8_t RxBuffer[NRF24L01_PAYLOAD_LENGTH+1] = {0};
 
+volatile uint8_t RxFlag = 0;
+NRF24L01 nrf;
+volatile uint8_t TxErrFlag = 0;
+volatile uint8_t TxSuccess = 0;
+volatile uint8_t TxReady = 0;
+uint8_t ackCounter = 0;
+uint8_t ackData[8] = {0};
+uint8_t regTmp = 0;
+telemetry_packet TxPacket = {0};
+command_packet currentCommand = {0};
 /* USER CODE END PV */
+
+void executeCommand(command_packet *cmd);
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -66,12 +79,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-
-
-  uint8_t rx_data[NRF24_PAYLOAD_LENGTH];
-  uint8_t rx_new_data = 0;
-
 QMC_HandleTypedef	qmc_sensor;
 /* USER CODE END 0 */
 
@@ -83,7 +90,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  char strBuff[32];
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -92,7 +99,28 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  nrf.spi = &hspi1;
+  nrf.DATA_RATE = NRF_DATA_RATE_1MBPS;
+  nrf.RF_CHANNEL = NRF24_CHANNEL;
+  nrf.PayloadLength = NRF24L01_PAYLOAD_LENGTH;
+  nrf.RetransmitCount = 3;
+  nrf.RetransmitDelay = 5;
+  nrf.TX_POWER = NRF_TX_PWR_0dBm;
+  nrf.RX_ADDRESS = RxAddr;
+  nrf.TX_ADDRESS = TxAddr;
+  nrf.CRC_WIDTH = NRF_CRC_WIDTH_1B;
+  nrf.ADDR_WIDTH = NRF_ADDR_WIDTH_5;
+  nrf.RX_BUFFER = RxBuffer;
+  nrf.TX_BUFFER = TxBuffer;
+  nrf.NRF_CSN_GPIOx = NRF24_CSN_GPIO_Port;
+  nrf.NRF_CSN_GPIO_PIN = NRF24_CSN_Pin;
+  nrf.NRF_CE_GPIOx = NRF24_CE_GPIO_Port;
+  nrf.NRF_CE_GPIO_PIN = NRF24_CE_Pin;
+  nrf.NRF_IRQ_GPIOx = NRF24_IRQ_GPIO_Port;
+  nrf.NRF_IRQ_GPIO_PIN = NRF24_IRQ_Pin;
+  nrf.NRF_IRQn = EXTI1_IRQn;
+  nrf.NRF_IRQ_preempt_priority = 5;
+  nrf.NRF_IRQ_sub_priority = 0;
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -109,13 +137,27 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init(); 
   /* USER CODE BEGIN 2 */
-  char buf[32];
   Motor_Init(&htim2);
-  ssd1306_Init(&hi2c1);
-  ssd1306_Print(&hi2c1,"INIT",1);
-  #ifdef RX_MODE
-  nrf24_rx_init(2464, _1Mbps);
-  #endif
+  /*Initialization*/
+  nrf.STATE = NRF_STATE_TX;
+  nrf.BUSY_FLAG = 0;
+   if(NRF_Init(&nrf) == NRF_OK){
+    HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+  } else {
+    printf("TX NRF Init failed\r\n");
+    Error_Handler();
+  }
+  NRF_SetRXAddress_P0(&nrf, TxAddr);
+  NRF_EnableRXPipe(&nrf, 0);
+  NRF_EnableDynamicPayload(&nrf, 1);
+  NRF_EnableDynamicPayloadPipes(&nrf);
+  NRF_EnableAckPayload(&nrf, 1);
+  NRF_FlushRX(&nrf);
+  NRF_FlushTX(&nrf);
+  NRF_ClearInterrupts(&nrf);
+  TxReady =1;
+  printf("TX ready with ACK Payload...\r\n");
+  /*Initialization DONE*/
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -123,50 +165,80 @@ int main(void)
 
   while (1)
   {
-    #ifdef RX_MODE
-    if(rx_new_data)
-    {
-        rx_new_data = 0;
-        printf("RX DATA: %s\r\n",rx_data);
-        switch(rx_data[0]) {
-          case 0x41: // GO
-            ssd1306_Print(&hi2c1,"GO",1);
-            snprintf(buf, sizeof(buf), "%u<>%u", rx_data[1], rx_data[2]);
-            ssd1306_SetCursor(0,38);
-            ssd1306_WriteString(buf, Font_11x18, White);
-            ssd1306_UpdateScreen(&hi2c1);
-            Set_Motor_Speed(&htim2, LEFT, FORWARD, rx_data[1]);
-            Set_Motor_Speed(&htim2, RIGHT, FORWARD, rx_data[2]);
-            break;
-          case 0x42: // STOP
-            ssd1306_Print(&hi2c1,"STOP",1);
-            snprintf(buf, sizeof(buf), "%u<>%u", rx_data[1], rx_data[2]);
-            ssd1306_SetCursor(0,38);
-            ssd1306_WriteString(buf, Font_11x18, White);
-            ssd1306_UpdateScreen(&hi2c1);
-            Set_Motor_Speed(&htim2, BOTH, BRAKE, STOP);
-            break;
-          case 0x43: // RVS
-            ssd1306_Print(&hi2c1,"RVS",1);
-            snprintf(buf, sizeof(buf), "%u<>%u", rx_data[1], rx_data[2]);
-            ssd1306_SetCursor(0,38);
-            ssd1306_WriteString(buf, Font_11x18, White);
-            ssd1306_UpdateScreen(&hi2c1);
-            Set_Motor_Speed(&htim2, LEFT, REVERSE, rx_data[1]);
-            Set_Motor_Speed(&htim2, RIGHT, REVERSE, rx_data[2]);
-            break;
-        }
-        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+      if(TxReady){
+        TxSuccess = 0;
+        TxErrFlag = 0;
+        TxBuffer[0] = 0x11;
+        TxBuffer[1] = TxPacket.motor_dir;
+        TxBuffer[2] = TxPacket.left_motor_speed;
+        TxBuffer[3] = TxPacket.right_motor_speed;
+        TxBuffer[4] = 0; // battery voltage placeholder
+        TxBuffer[5] = 0; // systems enabled placeholder
+        TxBuffer[6] = 0;
+        TxBuffer[7] = 0;
+        NRF_PushPacket(&nrf, TxBuffer);
+        TxReady = 0;
+      }
+      if (TxSuccess && nrf.BUSY_FLAG == 0)
+      {
+      if (nrf.RX_BUFFER[0] != 0) {
+        currentCommand.packet_type = nrf.RX_BUFFER[0];
+        currentCommand.left_motors_speed = nrf.RX_BUFFER[1];
+        currentCommand.right_motors_speed = nrf.RX_BUFFER[2];
+        currentCommand.buttons = nrf.RX_BUFFER[3];
+        currentCommand.reserved1 = nrf.RX_BUFFER[4];
+        currentCommand.reserved2 = nrf.RX_BUFFER[5];
+        currentCommand.reserved3 = nrf.RX_BUFFER[6];
+        currentCommand.reserved4 = nrf.RX_BUFFER[7];
+        executeCommand(&currentCommand);
+         // Process other reserved bytes if needed
+        NRF_FlushRX(&nrf);
+        TxReady = 1;
+      } else {
+        printf("TX OK (ACK), no ACK payload\r\n");
+      }
     }
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    else if (TxErrFlag)
+    {
+      TxReady=1;
+      printf("TX FAILED (no ACK after retries)\r\n");
+      TxReady = 1;
+    }
     HAL_Delay(50);
-    #endif
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
+}
+
+void executeCommand(command_packet* cmd) {
+        switch(cmd->packet_type) {
+          case 0x41: // GO
+            Set_Motor_Speed(&htim2, LEFT, FORWARD, cmd->left_motors_speed);
+            Set_Motor_Speed(&htim2, RIGHT, FORWARD, cmd->right_motors_speed);
+            HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
+            HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+            TxPacket.motor_dir = 1;
+            TxPacket.left_motor_speed = cmd->left_motors_speed;
+            TxPacket.right_motor_speed = cmd->right_motors_speed;
+            break;
+          case 0x42: // STOP
+            Set_Motor_Speed(&htim2, BOTH, BRAKE, STOP);
+            HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
+            HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
+            TxPacket.motor_dir = 0;
+            break;
+          case 0x43: // RVS
+            Set_Motor_Speed(&htim2, LEFT, REVERSE, cmd->left_motors_speed);
+            Set_Motor_Speed(&htim2, RIGHT, REVERSE, cmd->right_motors_speed);
+            HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
+            TxPacket.motor_dir = 2;
+            TxPacket.left_motor_speed = cmd->left_motors_speed; 
+            TxPacket.right_motor_speed = cmd->right_motors_speed;
+            break;
+        }
 }
 
 /**
@@ -452,25 +524,22 @@ static void MX_GPIO_Init(void)
 
   /* USER CODE END MX_GPIO_Init_2 */
 }
-
-/* USER CODE BEGIN 4 */
-#ifdef TX_MODE
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-	if(GPIO_Pin == NRF24_IRQ_Pin)
-		nrf24_tx_irq(); // clear interrupt flag
-}
-#endif
+  if (GPIO_Pin == nrf.NRF_IRQ_GPIO_PIN) {
+    uint8_t status = 0;
+    NRF_ReadRegister(&nrf, NRF_STATUS, &status);
 
-#ifdef RX_MODE
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-  if(GPIO_Pin == NRF24_IRQ_Pin){
-    nrf24_rx_receive(rx_data);
-    rx_new_data = 1;
+    if (status & (1 << 5)) {  // TX_DS = ACK received
+      TxSuccess = 1;
+    }
+    if (status & (1 << 4)) {  // MAX_RT = no ACK after retries
+      TxErrFlag = 1;
+    }
+    regTmp = status;
+    NRF_IRQ_Handler(&nrf);
   }
 }
-#endif
 
 
 /* USER CODE END 4 */

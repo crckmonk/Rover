@@ -40,6 +40,7 @@ extern "C" {
 #include "printf.h"
 #include "printf_config.h"
 #include "nrf24.h"
+#include "control.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -74,6 +75,12 @@ void Error_Handler(void);
 #define NRF24_IRQ_Pin GPIO_PIN_1
 #define NRF24_IRQ_GPIO_Port GPIOB
 #define NRF24_IRQ_EXTI_IRQn EXTI1_IRQn
+#define LED_GREEN_Pin GPIO_PIN_15
+#define LED_GREEN_GPIO_Port GPIOA
+#define LED_RED_Pin GPIO_PIN_3
+#define LED_RED_GPIO_Port GPIOB
+#define LED_BLUE_Pin GPIO_PIN_4
+#define LED_BLUE_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
