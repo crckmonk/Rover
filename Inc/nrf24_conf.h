@@ -43,10 +43,7 @@ extern SPI_HandleTypeDef hspi1;
 #define NRF24_IRQ_Pin        GPIO_PIN_1
 
 #define NRF24_CHANNEL 	  40
-
-uint8_t RxAddr[NRF24_ADDR_WIDTH] = {0xD7,0xD7,0xD7,0xD7,0xD7};
-uint8_t TxAddr[NRF24_ADDR_WIDTH] = {0xD7,0xD7,0xD7,0xD7,0xD7};
-/*
+#define NRF24_ADDR_WIDTH 5
 
 /*
 	Guide :

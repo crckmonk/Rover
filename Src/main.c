@@ -50,8 +50,9 @@ UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 uint8_t TxBuffer[NRF24L01_PAYLOAD_LENGTH] = {0};
-uint8_t RxBuffer[NRF24L01_PAYLOAD_LENGTH+1] = {0};
-
+uint8_t RxBuffer[NRF24L01_PAYLOAD_LENGTH] = {0};
+uint8_t RxAddr[NRF24_ADDR_WIDTH] = {0xD7,0xD7,0xD7,0xD7,0xD7};
+uint8_t TxAddr[NRF24_ADDR_WIDTH] = {0xD7,0xD7,0xD7,0xD7,0xD7};
 volatile uint8_t RxFlag = 0;
 NRF24L01 nrf;
 volatile uint8_t TxErrFlag = 0;
@@ -90,7 +91,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  char strBuff[32];
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -177,11 +177,12 @@ int main(void)
         TxBuffer[6] = 0;
         TxBuffer[7] = 0;
         NRF_PushPacket(&nrf, TxBuffer);
-        TxReady = 0;
-      }
+                TxReady = 0;
+                    }
       if (TxSuccess && nrf.BUSY_FLAG == 0)
       {
       if (nrf.RX_BUFFER[0] != 0) {
+
         currentCommand.packet_type = nrf.RX_BUFFER[0];
         currentCommand.left_motors_speed = nrf.RX_BUFFER[1];
         currentCommand.right_motors_speed = nrf.RX_BUFFER[2];
@@ -190,8 +191,12 @@ int main(void)
         currentCommand.reserved2 = nrf.RX_BUFFER[5];
         currentCommand.reserved3 = nrf.RX_BUFFER[6];
         currentCommand.reserved4 = nrf.RX_BUFFER[7];
+        for(int i=0;i<8;i++){
+          printf("ACK Payload Byte %d: 0x%02X\r\n", i, nrf.RX_BUFFER[i]);
+        }
+        printf("\r\n");
         executeCommand(&currentCommand);
-         // Process other reserved bytes if needed
+        // Process other reserved bytes if needed
         NRF_FlushRX(&nrf);
         TxReady = 1;
       } else {
@@ -200,11 +205,10 @@ int main(void)
     }
     else if (TxErrFlag)
     {
-      TxReady=1;
       printf("TX FAILED (no ACK after retries)\r\n");
       TxReady = 1;
     }
-    HAL_Delay(50);
+    HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -213,6 +217,8 @@ int main(void)
 }
 
 void executeCommand(command_packet* cmd) {
+  printf("Received Command Packet: Type=0x%02X, Left Speed=%d, Right Speed=%d, Buttons=0x%02X\r\n",
+         cmd->packet_type, cmd->left_motors_speed, cmd->right_motors_speed, cmd->buttons);
         switch(cmd->packet_type) {
           case 0x41: // GO
             Set_Motor_Speed(&htim2, LEFT, FORWARD, cmd->left_motors_speed);
