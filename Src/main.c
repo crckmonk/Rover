@@ -134,6 +134,8 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_USART1_UART_Init();
+  printf("TEST");
+  
   MX_I2C1_Init();
   MX_SPI1_Init(); 
   /* USER CODE BEGIN 2 */
@@ -142,7 +144,7 @@ int main(void)
   nrf.STATE = NRF_STATE_TX;
   nrf.BUSY_FLAG = 0;
    if(NRF_Init(&nrf) == NRF_OK){
-    HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+    
   } else {
     printf("TX NRF Init failed\r\n");
     Error_Handler();
@@ -181,6 +183,7 @@ int main(void)
                     }
       if (TxSuccess && nrf.BUSY_FLAG == 0)
       {
+      HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_13);
       if (nrf.RX_BUFFER[0] != 0) {
 
         currentCommand.packet_type = nrf.RX_BUFFER[0];
@@ -208,7 +211,7 @@ int main(void)
       printf("TX FAILED (no ACK after retries)\r\n");
       TxReady = 1;
     }
-    HAL_Delay(100);
+    HAL_Delay(50);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -217,14 +220,11 @@ int main(void)
 }
 
 void executeCommand(command_packet* cmd) {
-  printf("Received Command Packet: Type=0x%02X, Left Speed=%d, Right Speed=%d, Buttons=0x%02X\r\n",
-         cmd->packet_type, cmd->left_motors_speed, cmd->right_motors_speed, cmd->buttons);
         switch(cmd->packet_type) {
           case 0x41: // GO
             Set_Motor_Speed(&htim2, LEFT, FORWARD, cmd->left_motors_speed);
             Set_Motor_Speed(&htim2, RIGHT, FORWARD, cmd->right_motors_speed);
-            HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
-            HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
             TxPacket.motor_dir = 1;
             TxPacket.left_motor_speed = cmd->left_motors_speed;
             TxPacket.right_motor_speed = cmd->right_motors_speed;
@@ -243,6 +243,11 @@ void executeCommand(command_packet* cmd) {
             TxPacket.motor_dir = 2;
             TxPacket.left_motor_speed = cmd->left_motors_speed; 
             TxPacket.right_motor_speed = cmd->right_motors_speed;
+            break;
+          case 0x44: // KEEP
+            HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_RESET); // Blue LED ON
             break;
         }
 }
