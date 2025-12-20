@@ -1,22 +1,35 @@
-#ifndef _FONTS_H
-#define _FONTS_H
+#ifndef __FONT_H
+#define __FONT_H
 
-#include <stdint.h>
+#include "stdint.h"
 
-//
-//  Structure used to define fonts
-//
 typedef struct {
-    const uint8_t FontWidth;    /* Font width in pixels */
-    uint8_t FontHeight;         /* Font height in pixels */
-    const uint16_t *data;       /* Pointer to data font data array */
+    const uint8_t width;
+    uint8_t height;
+    const uint16_t *data;
 } FontDef;
 
-//
-//  Export the 3 available fonts
-//
+//Font lib.
 extern FontDef Font_7x10;
 extern FontDef Font_11x18;
 extern FontDef Font_16x26;
 
-#endif  // _FONTS_H
+//16-bit(RGB565) Image lib.
+/*******************************************
+ *             CAUTION:
+ *   If the MCU onchip flash cannot
+ *  store such huge image data,please
+ *           do not use it.
+ * These pics are for te
+ * st purpose only.
+ *******************************************/
+
+/* 128x128 pixel RGB565 image */
+extern const uint16_t saber[][128];
+
+/* 240x240 pixel RGB565 image 
+extern const uint16_t knky[][240];
+extern const uint16_t tek[][240];
+extern const uint16_t adi1[][240];
+*/
+#endif

@@ -35,7 +35,6 @@ extern "C" {
 #include "motor.h"
 #include "qmc5883.h"
 #include "mcutils.h"
-#include "ssd1306.h"
 #include "string.h"
 #include "printf.h"
 #include "printf_config.h"
