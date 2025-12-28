@@ -49,10 +49,8 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
-uint8_t TxBuffer[NRF24L01_PAYLOAD_LENGTH] = {0};
-uint8_t RxBuffer[NRF24L01_PAYLOAD_LENGTH] = {0};
-uint8_t RxAddr[NRF24_ADDR_WIDTH] = {0xD7,0xD7,0xD7,0xD7,0xD7};
-uint8_t TxAddr[NRF24_ADDR_WIDTH] = {0xD7,0xD7,0xD7,0xD7,0xD7};
+uint8_t TxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
+uint8_t RxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
 volatile uint8_t RxFlag = 0;
 NRF24L01 nrf;
 volatile uint8_t TxErrFlag = 0;
@@ -101,27 +99,25 @@ int main(void)
 
   /* USER CODE BEGIN Init */
   nrf.spi = &hspi1;
-  nrf.DATA_RATE = NRF_DATA_RATE_1MBPS;
+  nrf.DATA_RATE = NRF24_DATA_RATE_1MBPS;
   nrf.RF_CHANNEL = NRF24_CHANNEL;
-  nrf.PayloadLength = NRF24L01_PAYLOAD_LENGTH;
+  nrf.PayloadLength = NRF24_PAYLOAD_LENGTH;
   nrf.RetransmitCount = 10;
   nrf.RetransmitDelay = 15;
-  nrf.TX_POWER = NRF_TX_PWR_0dBm;
-  nrf.RX_ADDRESS = RxAddr;
-  nrf.TX_ADDRESS = TxAddr;
-  nrf.CRC_WIDTH = NRF_CRC_WIDTH_1B;
-  nrf.ADDR_WIDTH = NRF_ADDR_WIDTH_5;
+  nrf.TX_POWER = NRF24_TX_PWR_0dBm;
+  nrf.CRC_WIDTH = NRF24_CRC_WIDTH_1B;
+  nrf.ADDR_WIDTH = NRF24_ADDR_WIDTH_5;
   nrf.RX_BUFFER = RxBuffer;
   nrf.TX_BUFFER = TxBuffer;
-  nrf.NRF_CSN_GPIOx = NRF24_CSN_GPIO_Port;
-  nrf.NRF_CSN_GPIO_PIN = NRF24_CSN_Pin;
-  nrf.NRF_CE_GPIOx = NRF24_CE_GPIO_Port;
-  nrf.NRF_CE_GPIO_PIN = NRF24_CE_Pin;
-  nrf.NRF_IRQ_GPIOx = NRF24_IRQ_GPIO_Port;
-  nrf.NRF_IRQ_GPIO_PIN = NRF24_IRQ_Pin;
-  nrf.NRF_IRQn = EXTI1_IRQn;
-  nrf.NRF_IRQ_preempt_priority = 5;
-  nrf.NRF_IRQ_sub_priority = 0;
+  nrf.NRF24_CSN_GPIOx = NRF24_CSN_GPIO_Port;
+  nrf.NRF24_CSN_GPIO_PIN = NRF24_CSN_Pin;
+  nrf.NRF24_CE_GPIOx = NRF24_CE_GPIO_Port;
+  nrf.NRF24_CE_GPIO_PIN = NRF24_CE_Pin;
+  nrf.NRF24_IRQ_GPIOx = NRF24_IRQ_GPIO_Port;
+  nrf.NRF24_IRQ_GPIO_PIN = NRF24_IRQ_Pin;
+  nrf.NRF24_IRQn = EXTI1_IRQn;
+  nrf.NRF24_IRQ_preempt_priority = 5;
+  nrf.NRF24_IRQ_sub_priority = 0;
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -142,22 +138,20 @@ int main(void)
   /* USER CODE BEGIN 2 */
   Motor_Init(&htim2);
   /*Initialization*/
-  nrf.STATE = NRF_STATE_TX;
+  nrf.STATE = NRF24_STATE_TX;
   nrf.BUSY_FLAG = 0;
-   if(NRF_Init(&nrf) == NRF_OK){
+   if(NRF24_Init(&nrf) == NRF24_OK){
     
   } else {
     printf("TX NRF Init failed\r\n");
     Error_Handler();
   }
-  NRF_SetRXAddress_P0(&nrf, TxAddr);
-  NRF_EnableRXPipe(&nrf, 0);
-  NRF_SetDynamicPayload(&nrf, 1);
-  NRF_EnableDynamicPayloadPipes(&nrf);
-  NRF_EnableAckPayload(&nrf, 1);
-  NRF_FlushRX(&nrf);
-  NRF_FlushTX(&nrf);
-  NRF_ClearInterrupts(&nrf);
+  NRF24_SetDynamicPayload(&nrf, 1);
+  NRF24_EnableDynamicPayloadPipes(&nrf);
+  NRF24_EnableAckPayload(&nrf, 1);
+  NRF24_FlushRX(&nrf);
+  NRF24_FlushTX(&nrf);
+  NRF24_ClearInterrupts(&nrf);
   TxReady =1;
   printf("TX ready with ACK Payload...\r\n");
   /*Initialization DONE*/
@@ -168,6 +162,11 @@ int main(void)
   uint32_t lastTxTime = 0;
   while (1)
   {
+    /*TODO: 
+          Debug NRF24 configuration steps
+          Maybe Try rewriting the TX code without interrupts
+    
+    */
     if(TxReady){
         TxSuccess = 0;
         TxErrFlag = 0;
@@ -177,7 +176,7 @@ int main(void)
         TxBuffer[3] = TxPacket.right_motor_speed;
 
         lastTxTime = HAL_GetTick();  // ADD: Record time
-        NRF_PushPacket(&nrf, TxBuffer);
+        NRF24_PushPacket(&nrf, TxBuffer);
                 TxReady = 0;
                     }
       if (TxSuccess && nrf.BUSY_FLAG == 0)
@@ -192,13 +191,14 @@ int main(void)
         currentCommand.reserved2 = nrf.RX_BUFFER[5];
         currentCommand.reserved3 = nrf.RX_BUFFER[6];
         currentCommand.reserved4 = nrf.RX_BUFFER[7];
+        printf("ACK #%d\r\n",ackCounter++);
         for(int i=0;i<8;i++){
           printf("ACK Payload Byte %d: 0x%02X\r\n", i, nrf.RX_BUFFER[i]);
         }
         printf("\r\n");
         executeCommand(&currentCommand);
         // Process other reserved bytes if needed
-        NRF_FlushRX(&nrf);
+        NRF24_FlushRX(&nrf);
         TxReady = 1;
       } else {
         printf("TX OK (ACK), no ACK payload\r\n");
@@ -206,8 +206,8 @@ int main(void)
     } else if ((HAL_GetTick() - lastTxTime) > 500 && nrf.BUSY_FLAG == 1)
     {
         printf("TX Timeout - resetting\r\n");
-        NRF_FlushTX(&nrf);
-        NRF_ClearInterrupts(&nrf);
+        NRF24_FlushTX(&nrf);
+        NRF24_ClearInterrupts(&nrf);
         nrf.BUSY_FLAG = 0;
         TxReady = 1;
         TxErrFlag = 0;
@@ -219,7 +219,7 @@ int main(void)
       TxErrFlag = 0;
       TxReady = 1;
     }
-    HAL_Delay(80);
+    HAL_Delay(20);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -545,9 +545,9 @@ static void MX_GPIO_Init(void)
 }
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  if (GPIO_Pin == nrf.NRF_IRQ_GPIO_PIN) {
+  if (GPIO_Pin == nrf.NRF24_IRQ_GPIO_PIN) {
     uint8_t status = 0;
-    NRF_ReadRegister(&nrf, NRF_STATUS, &status);
+    NRF24_ReadRegister(&nrf, NRF24_STATUS, &status);
 
     if (status & (1 << 5)) {  // TX_DS = ACK received
       TxSuccess = 1;
@@ -556,7 +556,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
       TxErrFlag = 1;
     }
     regTmp = status;
-    NRF_IRQ_Handler(&nrf);
+    NRF24_IRQ_Handler(&nrf);
   }
 }
 

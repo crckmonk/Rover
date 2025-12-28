@@ -43,7 +43,6 @@ extern SPI_HandleTypeDef hspi1;
 #define NRF24_IRQ_Pin        GPIO_PIN_1
 
 #define NRF24_CHANNEL 	  40
-#define NRF24_ADDR_WIDTH 5
 
 /*
 	Guide :
@@ -73,8 +72,7 @@ extern SPI_HandleTypeDef hspi1;
 */
 
 /* ~~~~~~~~~~~~~~~~~~ Options ~~~~~~~~~~~~~~~~~~ */
-#define NRF24L01_PAYLOAD_LENGTH   8 // 1B ~ 32B
-#define NRF24_ADDR_WIDTH 5
+#define NRF24_PAYLOAD_LENGTH   8 // 1B ~ 32B
 /*
 	Guide :
 			NRF24L01_PAYLOAD_LENGTH : Length of NRF Payload (1B ~ 32B)
