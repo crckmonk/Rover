@@ -73,7 +73,7 @@ extern SPI_HandleTypeDef hspi1;
 */
 
 /* ~~~~~~~~~~~~~~~~~~ Options ~~~~~~~~~~~~~~~~~~ */
-#define NRF24L01_PAYLOAD_LENGTH   32 // 1B ~ 32B
+#define NRF24L01_PAYLOAD_LENGTH   8 // 1B ~ 32B
 #define NRF24_ADDR_WIDTH 5
 /*
 	Guide :

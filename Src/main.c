@@ -104,8 +104,8 @@ int main(void)
   nrf.DATA_RATE = NRF_DATA_RATE_1MBPS;
   nrf.RF_CHANNEL = NRF24_CHANNEL;
   nrf.PayloadLength = NRF24L01_PAYLOAD_LENGTH;
-  nrf.RetransmitCount = 3;
-  nrf.RetransmitDelay = 5;
+  nrf.RetransmitCount = 10;
+  nrf.RetransmitDelay = 15;
   nrf.TX_POWER = NRF_TX_PWR_0dBm;
   nrf.RX_ADDRESS = RxAddr;
   nrf.TX_ADDRESS = TxAddr;
@@ -152,7 +152,7 @@ int main(void)
   }
   NRF_SetRXAddress_P0(&nrf, TxAddr);
   NRF_EnableRXPipe(&nrf, 0);
-  NRF_SetDynamicPayloadLength(&nrf, 1);
+  NRF_SetDynamicPayload(&nrf, 1);
   NRF_EnableDynamicPayloadPipes(&nrf);
   NRF_EnableAckPayload(&nrf, 1);
   NRF_FlushRX(&nrf);
@@ -175,10 +175,7 @@ int main(void)
         TxBuffer[1] = TxPacket.motor_dir;
         TxBuffer[2] = TxPacket.left_motor_speed;
         TxBuffer[3] = TxPacket.right_motor_speed;
-        TxBuffer[4] = 0; // battery voltage placeholder
-        TxBuffer[5] = 0; // systems enabled placeholder
-        TxBuffer[6] = 0;
-        TxBuffer[7] = 0;
+
         lastTxTime = HAL_GetTick();  // ADD: Record time
         NRF_PushPacket(&nrf, TxBuffer);
                 TxReady = 0;

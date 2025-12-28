@@ -186,7 +186,7 @@ NRF_RESULT NRF_SetTXAddress(NRF24L01* dev,uint8_t* address);	// 5bytes of addres
 NRF_RESULT NRF_SetRXPayloadWidth_P0(NRF24L01* dev,uint8_t width);
 
 /* FEATURE */
-NRF_RESULT NRF_SetDynamicPayloadLength(NRF24L01* dev,uint8_t activate);
+NRF_RESULT NRF_SetDynamicPayload(NRF24L01* dev,uint8_t activate);
 NRF_RESULT NRF_EnableDynamicPayloadPipes(NRF24L01* dev);
 NRF_RESULT NRF_EnableAckPayload(NRF24L01* dev, uint8_t activate);
 NRF_RESULT NRF_WriteAckPayload(NRF24L01* dev, uint8_t pipe, uint8_t* data, uint8_t len);
