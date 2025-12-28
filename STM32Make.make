@@ -101,7 +101,6 @@ Src/main.c \
 Src/mcutils.c \
 Src/motor.c \
 Src/nrf24.c \
-Src/ssd1306.c \
 Src/stm32f4xx_hal_msp.c \
 Src/stm32f4xx_it.c \
 Src/syscalls.c \

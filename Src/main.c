@@ -91,6 +91,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+  //IMPORTANT: in launch.json set "device": "stm32f411xe" without .s
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -151,7 +152,7 @@ int main(void)
   }
   NRF_SetRXAddress_P0(&nrf, TxAddr);
   NRF_EnableRXPipe(&nrf, 0);
-  NRF_EnableDynamicPayload(&nrf, 1);
+  NRF_SetDynamicPayloadLength(&nrf, 1);
   NRF_EnableDynamicPayloadPipes(&nrf);
   NRF_EnableAckPayload(&nrf, 1);
   NRF_FlushRX(&nrf);
@@ -164,10 +165,10 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
+  uint32_t lastTxTime = 0;
   while (1)
   {
-      if(TxReady){
+    if(TxReady){
         TxSuccess = 0;
         TxErrFlag = 0;
         TxBuffer[0] = 0x11;
@@ -178,14 +179,14 @@ int main(void)
         TxBuffer[5] = 0; // systems enabled placeholder
         TxBuffer[6] = 0;
         TxBuffer[7] = 0;
+        lastTxTime = HAL_GetTick();  // ADD: Record time
         NRF_PushPacket(&nrf, TxBuffer);
                 TxReady = 0;
                     }
       if (TxSuccess && nrf.BUSY_FLAG == 0)
       {
-      HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_13);
+      //HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_13);
       if (nrf.RX_BUFFER[0] != 0) {
-
         currentCommand.packet_type = nrf.RX_BUFFER[0];
         currentCommand.left_motors_speed = nrf.RX_BUFFER[1];
         currentCommand.right_motors_speed = nrf.RX_BUFFER[2];
@@ -205,13 +206,23 @@ int main(void)
       } else {
         printf("TX OK (ACK), no ACK payload\r\n");
       }
+    } else if ((HAL_GetTick() - lastTxTime) > 500 && nrf.BUSY_FLAG == 1)
+    {
+        printf("TX Timeout - resetting\r\n");
+        NRF_FlushTX(&nrf);
+        NRF_ClearInterrupts(&nrf);
+        nrf.BUSY_FLAG = 0;
+        TxReady = 1;
+        TxErrFlag = 0;
+        TxSuccess = 0;
     }
     else if (TxErrFlag)
     {
       printf("TX FAILED (no ACK after retries)\r\n");
+      TxErrFlag = 0;
       TxReady = 1;
     }
-    HAL_Delay(50);
+    HAL_Delay(80);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

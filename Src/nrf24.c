@@ -295,16 +295,16 @@ NRF_RESULT NRF_SetRFChannel(NRF24L01* dev, uint8_t ch) {
 	return NRF_OK;
 }
 
-NRF_RESULT NRF_EnableDynamicPayload(NRF24L01* dev,uint8_t activate) {
+NRF_RESULT NRF_SetDynamicPayloadLength(NRF24L01* dev,uint8_t activate) {
 	uint8_t reg = 0;
 	if (NRF_ReadRegister(dev, NRF_FEATURE, &reg) != NRF_OK) {
 		return NRF_ERROR;
 	}
 
 	if (activate) {
-		reg |= 1 << NRF_DYNPD;
+		reg |= 1 << 2;
 	}else {
-		reg &= ~(1 << NRF_DYNPD);
+		reg &= ~(1 << 2 );
 	}
 
 	if (NRF_WriteRegister(dev, NRF_FEATURE, &reg) != NRF_OK) {
