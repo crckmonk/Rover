@@ -92,11 +92,10 @@ build/debug/sysmem.o
 build/debug/system_stm32f4xx.d
 build/debug/system_stm32f4xx.lst
 build/debug/system_stm32f4xx.o
-build/*
+build/
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/settings.json
 .vscode/tasks.json
 openocd.cfg
 .stm32env
-build/*

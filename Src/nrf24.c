@@ -150,8 +150,6 @@ void NRF24_IRQ_Handler(NRF24L01* dev) {
 		status |= 1 << 4;
 
 		NRF24_FlushTX(dev);
-		NRF24_PowerUp(dev,0);	// power down
-		NRF24_PowerUp(dev,1);	// power up
 		NRF24_CE_DISABLE(dev);
 		NRF24_RXTXControl(dev, NRF24_STATE_RX);
 		NRF24_CE_ENABLE(dev);

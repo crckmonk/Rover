@@ -43,7 +43,6 @@ extern SPI_HandleTypeDef hspi1;
 #define NRF24_IRQ_Pin        GPIO_PIN_1
 
 #define NRF24_CHANNEL 	  40
-
 /*
 	Guide :
 			NRF24L01_SPI              : Specifies the SPI peripheral

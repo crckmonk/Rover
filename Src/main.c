@@ -49,6 +49,7 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
+uint8_t RxTxAddress[5] = {0xD7,0xD7,0xD7,0xD7,0xD7};
 uint8_t TxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
 uint8_t RxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
 volatile uint8_t RxFlag = 0;
@@ -79,6 +80,95 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 QMC_HandleTypedef	qmc_sensor;
+
+void NRF24_PrintConfig(NRF24L01* dev) {
+    uint8_t reg;
+    uint8_t addr[5];
+    
+    printf("\r\n=== NRF24L01 Configuration ===\r\n");
+    
+    // CONFIG register
+    NRF24_ReadRegister(dev, NRF24_CONFIG, &reg);
+    printf("CONFIG (0x00): 0x%02X\r\n", reg);
+    printf("  - PWR_UP: %d\r\n", (reg >> 1) & 1);
+    printf("  - PRIM_RX: %d (%s)\r\n", reg & 1, (reg & 1) ? "RX" : "TX");
+    printf("  - CRC: %s, Width: %dB\r\n", (reg >> 3) & 1 ? "ON" : "OFF", ((reg >> 2) & 1) + 1);
+    
+    // EN_AA register
+    NRF24_ReadRegister(dev, NRF24_EN_AA, &reg);
+    printf("EN_AA (0x01): 0x%02X\r\n", reg);
+    
+    // EN_RXADDR register
+    NRF24_ReadRegister(dev, NRF24_EN_RXADDR, &reg);
+    printf("EN_RXADDR (0x02): 0x%02X\r\n", reg);
+    
+    // SETUP_AW register
+    NRF24_ReadRegister(dev, NRF24_SETUP_AW, &reg);
+    printf("SETUP_AW (0x03): 0x%02X (%d bytes)\r\n", reg, reg + 2);
+    
+    // SETUP_RETR register
+    NRF24_ReadRegister(dev, NRF24_SETUP_RETR, &reg);
+    printf("SETUP_RETR (0x04): 0x%02X\r\n", reg);
+    printf("  - ARD: %d (%d us)\r\n", (reg >> 4) & 0x0F, ((reg >> 4) & 0x0F) * 250 + 250);
+    printf("  - ARC: %d retransmits\r\n", reg & 0x0F);
+    
+    // RF_CH register
+    NRF24_ReadRegister(dev, NRF24_RF_CH, &reg);
+    printf("RF_CH (0x05): %d (%.0f MHz)\r\n", reg, 2400.0 + reg);
+    
+    // RF_SETUP register
+    NRF24_ReadRegister(dev, NRF24_RF_SETUP, &reg);
+    printf("RF_SETUP (0x06): 0x%02X\r\n", reg);
+    printf("  - Data Rate: %s\r\n", 
+           ((reg >> 3) & 1) ? "2Mbps" : (((reg >> 5) & 1) ? "250kbps" : "1Mbps"));
+    printf("  - TX Power: %d dBm\r\n", -18 + ((reg >> 1) & 3) * 6);
+    
+    // STATUS register
+    NRF24_ReadRegister(dev, NRF24_STATUS, &reg);
+    printf("STATUS (0x07): 0x%02X\r\n", reg);
+    printf("  - RX_DR: %d, TX_DS: %d, MAX_RT: %d\r\n", 
+           (reg >> 6) & 1, (reg >> 5) & 1, (reg >> 4) & 1);
+    printf("  - RX_P_NO: %d, TX_FULL: %d\r\n", (reg >> 1) & 7, reg & 1);
+    
+    // OBSERVE_TX register
+    NRF24_ReadRegister(dev, NRF24_OBSERVE_TX, &reg);
+    printf("OBSERVE_TX (0x08): 0x%02X (Lost: %d, Retrans: %d)\r\n", 
+           reg, (reg >> 4) & 0x0F, reg & 0x0F);
+    
+    // RX_ADDR_P0
+    uint8_t tx[5] = {0};
+    NRF24_SendCommand(dev, NRF24_CMD_R_REGISTER | NRF24_RX_ADDR_P0, tx, addr, 5);
+    printf("RX_ADDR_P0: %02X:%02X:%02X:%02X:%02X\r\n", 
+           addr[0], addr[1], addr[2], addr[3], addr[4]);
+    
+    // TX_ADDR
+    NRF24_SendCommand(dev, NRF24_CMD_R_REGISTER | NRF24_TX_ADDR, tx, addr, 5);
+    printf("TX_ADDR:    %02X:%02X:%02X:%02X:%02X\r\n", 
+           addr[0], addr[1], addr[2], addr[3], addr[4]);
+    
+    // RX_PW_P0
+    NRF24_ReadRegister(dev, NRF24_RX_PW_P0, &reg);
+    printf("RX_PW_P0 (0x11): %d bytes\r\n", reg);
+    
+    // FIFO_STATUS register
+    NRF24_ReadRegister(dev, NRF24_FIFO_STATUS, &reg);
+    printf("FIFO_STATUS (0x17): 0x%02X\r\n", reg);
+    printf("  - TX: %s, RX: %s\r\n",
+           (reg & 0x10) ? "Empty" : ((reg & 0x20) ? "Full" : "Data"),
+           (reg & 0x01) ? "Empty" : ((reg & 0x02) ? "Full" : "Data"));
+    
+    // DYNPD register
+    NRF24_ReadRegister(dev, NRF24_DYNPD, &reg);
+    printf("DYNPD (0x1C): 0x%02X 0b%08b\r\n", reg,reg);
+    
+    // FEATURE register
+    NRF24_ReadRegister(dev, NRF24_FEATURE, &reg);
+    printf("FEATURE (0x1D): 0x%02X\r\n", reg);
+    printf("  - EN_DPL: %d, EN_ACK_PAY: %d, EN_DYN_ACK: %d\r\n",
+           (reg >> 2) & 1, (reg >> 1) & 1, reg & 1);
+    
+    printf("==============================\r\n\r\n");
+}
 /* USER CODE END 0 */
 
 /**
@@ -100,6 +190,8 @@ int main(void)
   /* USER CODE BEGIN Init */
   nrf.spi = &hspi1;
   nrf.DATA_RATE = NRF24_DATA_RATE_1MBPS;
+  nrf.RX_ADDRESS = RxTxAddress;
+  nrf.TX_ADDRESS = RxTxAddress;
   nrf.RF_CHANNEL = NRF24_CHANNEL;
   nrf.PayloadLength = NRF24_PAYLOAD_LENGTH;
   nrf.RetransmitCount = 10;
@@ -131,7 +223,6 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_USART1_UART_Init();
-  printf("TEST");
   
   MX_I2C1_Init();
   MX_SPI1_Init(); 
@@ -152,7 +243,10 @@ int main(void)
   NRF24_FlushRX(&nrf);
   NRF24_FlushTX(&nrf);
   NRF24_ClearInterrupts(&nrf);
-  TxReady =1;
+
+  NRF24_PrintConfig(&nrf);
+
+  TxReady = 1;
   printf("TX ready with ACK Payload...\r\n");
   /*Initialization DONE*/
   /* USER CODE END 2 */
@@ -167,18 +261,18 @@ int main(void)
           Maybe Try rewriting the TX code without interrupts
     
     */
-    if(TxReady){
+    if(TxReady && nrf.BUSY_FLAG == 0){
         TxSuccess = 0;
         TxErrFlag = 0;
         TxBuffer[0] = 0x11;
         TxBuffer[1] = TxPacket.motor_dir;
         TxBuffer[2] = TxPacket.left_motor_speed;
         TxBuffer[3] = TxPacket.right_motor_speed;
-
         lastTxTime = HAL_GetTick();  // ADD: Record time
         NRF24_PushPacket(&nrf, TxBuffer);
-                TxReady = 0;
-                    }
+        HAL_Delay(20);
+        TxReady = 0;
+        }
       if (TxSuccess && nrf.BUSY_FLAG == 0)
       {
       //HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_13);
@@ -187,10 +281,6 @@ int main(void)
         currentCommand.left_motors_speed = nrf.RX_BUFFER[1];
         currentCommand.right_motors_speed = nrf.RX_BUFFER[2];
         currentCommand.buttons = nrf.RX_BUFFER[3];
-        currentCommand.reserved1 = nrf.RX_BUFFER[4];
-        currentCommand.reserved2 = nrf.RX_BUFFER[5];
-        currentCommand.reserved3 = nrf.RX_BUFFER[6];
-        currentCommand.reserved4 = nrf.RX_BUFFER[7];
         printf("ACK #%d\r\n",ackCounter++);
         for(int i=0;i<8;i++){
           printf("ACK Payload Byte %d: 0x%02X\r\n", i, nrf.RX_BUFFER[i]);
@@ -202,6 +292,8 @@ int main(void)
         TxReady = 1;
       } else {
         printf("TX OK (ACK), no ACK payload\r\n");
+        //NRF24_PrintConfig(&nrf);
+        TxReady = 1;
       }
     } else if ((HAL_GetTick() - lastTxTime) > 500 && nrf.BUSY_FLAG == 1)
     {
@@ -219,7 +311,7 @@ int main(void)
       TxErrFlag = 0;
       TxReady = 1;
     }
-    HAL_Delay(20);
+    HAL_Delay(40);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
