@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#define SCANNER
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -82,6 +82,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 QMC_HandleTypedef	qmc_sensor;
 
 void NRF24_PrintConfig(NRF24L01* dev) {
+    /* TODO: Move to nrf24.c or other comms lib*/
     uint8_t reg;
     uint8_t addr[5];
     
@@ -169,6 +170,15 @@ void NRF24_PrintConfig(NRF24L01* dev) {
     
     printf("==============================\r\n\r\n");
 }
+
+void NRF24_PrintState(NRF24L01* dev){
+  /* TODO: Move to nrf24.c or other comms lib*/
+  uint8_t reg;
+  NRF24_ReadRegister(dev, NRF24_CONFIG, &reg);
+  printf("PWR_UP: %b PRIM_RX: %b CE: %b", (reg >> 1) & 1,  reg & 1, HAL_GPIO_ReadPin(dev->NRF24_CE_GPIOx, dev->NRF24_CE_GPIO_PIN));
+}
+
+
 /* USER CODE END 0 */
 
 /**
@@ -247,9 +257,9 @@ int main(void)
   NRF24_PrintConfig(&nrf);
 
   TxReady = 1;
-  printf("TX ready with ACK Payload...\r\n");
+  //printf("TX ready with ACK Payload...\r\n");
   /*Initialization DONE*/
-  /* USER CODE END 2 */
+  /* USER CODE END 2 */  
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -259,7 +269,6 @@ int main(void)
     /*TODO: 
           Debug NRF24 configuration steps
           Maybe Try rewriting the TX code without interrupts
-    
     */
     if(TxReady && nrf.BUSY_FLAG == 0){
         TxSuccess = 0;
@@ -309,9 +318,10 @@ int main(void)
     {
       printf("TX FAILED (no ACK after retries)\r\n");
       TxErrFlag = 0;
+      TxSuccess = 0;
       TxReady = 1;
     }
-    HAL_Delay(40);
+    HAL_Delay(80);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
