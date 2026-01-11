@@ -1,8 +1,8 @@
-#ifndef NRF24L01_H_
-#define NRF24L01_H_
+#ifndef NRF24L01_H
+#define NRF24L01_H
 
 #include "nrf24_conf.h"
-
+#include "stm32f4xx_hal.h"
 /* Registers */
 #define NRF24_CONFIG		0x00
 #define NRF24_EN_AA		0x01
@@ -76,7 +76,7 @@ typedef enum{
 	NRF24_STATE_TX=0
 } NRF24_TXRX_STATE;
 
-typedef struct{
+typedef struct {
 	SPI_HandleTypeDef* spi;
 	NRF24_DATA_RATE 	DATA_RATE;
 	uint8_t			RF_CHANNEL;
@@ -90,6 +90,8 @@ typedef struct{
 	NRF24_ADDR_WIDTH	ADDR_WIDTH;
 	NRF24_TXRX_STATE	STATE;
 	uint8_t			BUSY_FLAG;
+	uint8_t 		LAST_STATUS;
+	uint8_t IRQ_FLAG;
 
 	uint8_t*		RX_BUFFER;
 	uint8_t*		TX_BUFFER;
@@ -123,7 +125,7 @@ void NRF24_CS_ENABLE(NRF24L01* dev);
 void NRF24_CS_DISABLE(NRF24L01* dev);
 
 /* EXTI Interrupt Handler */
-void NRF24_IRQ_Handler(NRF24L01* dev);
+uint8_t NRF24_IRQ_Handler(NRF24L01* dev);
 
 /* Blocking Data Sending / Receiving FXs */
 NRF24_RESULT NRF24_SendPacket(NRF24L01* dev,uint8_t* data);
@@ -190,4 +192,4 @@ NRF24_RESULT NRF24_SetDynamicPayload(NRF24L01* dev,uint8_t activate);
 NRF24_RESULT NRF24_EnableDynamicPayloadPipes(NRF24L01* dev);
 NRF24_RESULT NRF24_EnableAckPayload(NRF24L01* dev, uint8_t activate);
 NRF24_RESULT NRF24_WriteAckPayload(NRF24L01* dev, uint8_t pipe, uint8_t* data, uint8_t len);
-#endif /* NRF24L01_H_ */
+#endif /* NRF24L01_H */

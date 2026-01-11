@@ -118,10 +118,10 @@ NRF24_RESULT NRF24_SendCommand(NRF24L01* dev, uint8_t cmd, uint8_t* tx, uint8_t*
 	return NRF24_OK;
 }
 
-void NRF24_IRQ_Handler(NRF24L01* dev) {
+uint8_t NRF24_IRQ_Handler(NRF24L01* dev) {
 	uint8_t status = 0;
 	if (NRF24_ReadRegister(dev, NRF24_STATUS, &status) != NRF24_OK) {
-		return;
+		return 0;
 	}
 
 	if ((status & (1 << 6))) {	// RX FIFO Interrupt
@@ -156,6 +156,7 @@ void NRF24_IRQ_Handler(NRF24L01* dev) {
 		NRF24_WriteRegister(dev, NRF24_STATUS, &status);
 		dev->BUSY_FLAG=0;
 	}
+	return status;
 }
 
 NRF24_RESULT NRF24_ReadRegister(NRF24L01* dev, uint8_t reg, uint8_t* data) {
@@ -631,8 +632,8 @@ NRF24_RESULT NRF24_WriteAckPayload(NRF24L01* dev, uint8_t pipe, uint8_t* data, u
     if (len > 32) len = 32;
     
     // Command: W_ACK_PAYLOAD | pipe (0xA8 | pipe)
-    if (NRF24_SendCommand(dev, NRF24_CMD_W_ACK_PAYLOAD | (pipe & 0x07), data, rx, len) != NRF24_OK) {
-        return NRF24_ERROR;
+if (NRF24_SendCommand(dev, NRF24_CMD_W_ACK_PAYLOAD | (pipe & 0x07), data, rx, len) != NRF24_OK) {
+    return NRF24_ERROR;
     }
     return NRF24_OK;
 }

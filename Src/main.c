@@ -52,15 +52,8 @@ UART_HandleTypeDef huart1;
 uint8_t RxTxAddress[5] = {0xD7,0xD7,0xD7,0xD7,0xD7};
 uint8_t TxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
 uint8_t RxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
-volatile uint8_t RxFlag = 0;
 NRF24L01 nrf;
-volatile uint8_t TxErrFlag = 0;
-volatile uint8_t TxSuccess = 0;
-volatile uint8_t TxReady = 0;
 uint8_t ackCounter = 0;
-uint8_t ackData[8] = {0};
-uint8_t regTmp = 0;
-telemetry_packet TxPacket = {0};
 command_packet currentCommand = {0};
 /* USER CODE END PV */
 
@@ -198,28 +191,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  nrf.spi = &hspi1;
-  nrf.DATA_RATE = NRF24_DATA_RATE_1MBPS;
-  nrf.RX_ADDRESS = RxTxAddress;
-  nrf.TX_ADDRESS = RxTxAddress;
-  nrf.RF_CHANNEL = NRF24_CHANNEL;
-  nrf.PayloadLength = NRF24_PAYLOAD_LENGTH;
-  nrf.RetransmitCount = 10;
-  nrf.RetransmitDelay = 15;
-  nrf.TX_POWER = NRF24_TX_PWR_0dBm;
-  nrf.CRC_WIDTH = NRF24_CRC_WIDTH_1B;
-  nrf.ADDR_WIDTH = NRF24_ADDR_WIDTH_5;
-  nrf.RX_BUFFER = RxBuffer;
-  nrf.TX_BUFFER = TxBuffer;
-  nrf.NRF24_CSN_GPIOx = NRF24_CSN_GPIO_Port;
-  nrf.NRF24_CSN_GPIO_PIN = NRF24_CSN_Pin;
-  nrf.NRF24_CE_GPIOx = NRF24_CE_GPIO_Port;
-  nrf.NRF24_CE_GPIO_PIN = NRF24_CE_Pin;
-  nrf.NRF24_IRQ_GPIOx = NRF24_IRQ_GPIO_Port;
-  nrf.NRF24_IRQ_GPIO_PIN = NRF24_IRQ_Pin;
-  nrf.NRF24_IRQn = EXTI1_IRQn;
-  nrf.NRF24_IRQ_preempt_priority = 5;
-  nrf.NRF24_IRQ_sub_priority = 0;
+
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -238,90 +210,39 @@ int main(void)
   MX_SPI1_Init(); 
   /* USER CODE BEGIN 2 */
   Motor_Init(&htim2);
+
+  Radio_InitNRF24(&nrf, &hspi1,RxTxAddress,NRF24_STATE_RX);
   /*Initialization*/
-  nrf.STATE = NRF24_STATE_TX;
-  nrf.BUSY_FLAG = 0;
-   if(NRF24_Init(&nrf) == NRF24_OK){
-    
-  } else {
-    printf("TX NRF Init failed\r\n");
-    Error_Handler();
-  }
-  NRF24_SetDynamicPayload(&nrf, 1);
-  NRF24_EnableDynamicPayloadPipes(&nrf);
-  NRF24_EnableAckPayload(&nrf, 1);
-  NRF24_FlushRX(&nrf);
-  NRF24_FlushTX(&nrf);
-  NRF24_ClearInterrupts(&nrf);
-
+  
   NRF24_PrintConfig(&nrf);
+  
+  NRF24_CE_ENABLE(&nrf);
 
-  TxReady = 1;
+  NRF24_PrintState(&nrf);
+
   //printf("TX ready with ACK Payload...\r\n");
   /*Initialization DONE*/
   /* USER CODE END 2 */  
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint32_t lastTxTime = 0;
+  command_packet telemetryPacket;
   while (1)
   {
-    /*TODO: 
-          Debug NRF24 configuration steps
-          Maybe Try rewriting the TX code without interrupts
+    /*
+    TODO: Implement RX with Ack payloads 
     */
-    if(TxReady && nrf.BUSY_FLAG == 0){
-        TxSuccess = 0;
-        TxErrFlag = 0;
-        TxBuffer[0] = 0x11;
-        TxBuffer[1] = TxPacket.motor_dir;
-        TxBuffer[2] = TxPacket.left_motor_speed;
-        TxBuffer[3] = TxPacket.right_motor_speed;
-        lastTxTime = HAL_GetTick();  // ADD: Record time
-        NRF24_PushPacket(&nrf, TxBuffer);
-        HAL_Delay(20);
-        TxReady = 0;
-        }
-      if (TxSuccess && nrf.BUSY_FLAG == 0)
-      {
-      //HAL_GPIO_TogglePin(GPIOC,GPIO_PIN_13);
-      if (nrf.RX_BUFFER[0] != 0) {
-        currentCommand.packet_type = nrf.RX_BUFFER[0];
-        currentCommand.left_motors_speed = nrf.RX_BUFFER[1];
-        currentCommand.right_motors_speed = nrf.RX_BUFFER[2];
-        currentCommand.buttons = nrf.RX_BUFFER[3];
-        printf("ACK #%d\r\n",ackCounter++);
-        for(int i=0;i<8;i++){
-          printf("ACK Payload Byte %d: 0x%02X\r\n", i, nrf.RX_BUFFER[i]);
-        }
-        printf("\r\n");
-        executeCommand(&currentCommand);
-        // Process other reserved bytes if needed
-        NRF24_FlushRX(&nrf);
-        TxReady = 1;
-      } else {
-        printf("TX OK (ACK), no ACK payload\r\n");
-        //NRF24_PrintConfig(&nrf);
-        TxReady = 1;
-      }
-    } else if ((HAL_GetTick() - lastTxTime) > 500 && nrf.BUSY_FLAG == 1)
-    {
-        printf("TX Timeout - resetting\r\n");
-        NRF24_FlushTX(&nrf);
-        NRF24_ClearInterrupts(&nrf);
-        nrf.BUSY_FLAG = 0;
-        TxReady = 1;
-        TxErrFlag = 0;
-        TxSuccess = 0;
+    telemetryPacket.packet_type = 0x11;
+    telemetryPacket.left_motors_speed = 0xFF;
+    telemetryPacket.left_motors_speed = 0xFF;
+
+   Radio_NRF24RxMainLoop(&nrf, &telemetryPacket, RxBuffer);
+   if(RxBuffer[0] != 0){
+    for(uint8_t i =0;i<NRF24_PAYLOAD_LENGTH;i++){
+      printf("RX[%d]: %02x",i,RxBuffer[i]);
     }
-    else if (TxErrFlag)
-    {
-      printf("TX FAILED (no ACK after retries)\r\n");
-      TxErrFlag = 0;
-      TxSuccess = 0;
-      TxReady = 1;
-    }
-    HAL_Delay(80);
+    printf("\r\n");
+   }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -335,24 +256,17 @@ void executeCommand(command_packet* cmd) {
             Set_Motor_Speed(&htim2, LEFT, FORWARD, cmd->left_motors_speed);
             Set_Motor_Speed(&htim2, RIGHT, FORWARD, cmd->right_motors_speed);
             HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
-            TxPacket.motor_dir = 1;
-            TxPacket.left_motor_speed = cmd->left_motors_speed;
-            TxPacket.right_motor_speed = cmd->right_motors_speed;
             break;
           case 0x42: // STOP
             Set_Motor_Speed(&htim2, BOTH, BRAKE, STOP);
             HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
             HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
-            TxPacket.motor_dir = 0;
             break;
           case 0x43: // RVS
             Set_Motor_Speed(&htim2, LEFT, REVERSE, cmd->left_motors_speed);
             Set_Motor_Speed(&htim2, RIGHT, REVERSE, cmd->right_motors_speed);
             HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
             HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
-            TxPacket.motor_dir = 2;
-            TxPacket.left_motor_speed = cmd->left_motors_speed; 
-            TxPacket.right_motor_speed = cmd->right_motors_speed;
             break;
           case 0x44: // KEEP
             HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
@@ -648,16 +562,6 @@ static void MX_GPIO_Init(void)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == nrf.NRF24_IRQ_GPIO_PIN) {
-    uint8_t status = 0;
-    NRF24_ReadRegister(&nrf, NRF24_STATUS, &status);
-
-    if (status & (1 << 5)) {  // TX_DS = ACK received
-      TxSuccess = 1;
-    }
-    if (status & (1 << 4)) {  // MAX_RT = no ACK after retries
-      TxErrFlag = 1;
-    }
-    regTmp = status;
     NRF24_IRQ_Handler(&nrf);
   }
 }

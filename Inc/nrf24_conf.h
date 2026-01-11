@@ -27,9 +27,6 @@
 //#include "spi_unit.h"
 
 /* Driver-library for STM32 */
-#include "main.h"
-extern SPI_HandleTypeDef hspi1;
-
 /* ~~~~~~~~~~~~~~~ Configurations ~~~~~~~~~~~~~~ */
 /* ~~~~~~~~~~ SPI ~~~~~~~~~~~ */
 #define NRF24_CSN_Pin GPIO_PIN_4
@@ -43,6 +40,7 @@ extern SPI_HandleTypeDef hspi1;
 #define NRF24_IRQ_Pin        GPIO_PIN_1
 
 #define NRF24_CHANNEL 	  40
+#define NRF24_MAX_CHANNELS    125
 /*
 	Guide :
 			NRF24L01_SPI              : Specifies the SPI peripheral

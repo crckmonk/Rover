@@ -34,12 +34,12 @@ extern "C" {
 #include <stdio.h>
 #include "motor.h"
 #include "qmc5883.h"
-#include "mcutils.h"
 #include "string.h"
 #include "printf.h"
 #include "printf_config.h"
-#include "nrf24.h"
 #include "control.h"
+#include "nrf24.h"
+#include "radio.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
