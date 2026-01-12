@@ -91,7 +91,7 @@ typedef struct {
 	NRF24_TXRX_STATE	STATE;
 	uint8_t			BUSY_FLAG;
 	uint8_t 		LAST_STATUS;
-	uint8_t IRQ_FLAG;
+	volatile uint8_t IRQ_FLAG;
 
 	uint8_t*		RX_BUFFER;
 	uint8_t*		TX_BUFFER;

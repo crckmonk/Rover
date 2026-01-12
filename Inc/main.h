@@ -34,7 +34,6 @@ extern "C" {
 #include <stdio.h>
 #include "motor.h"
 #include "qmc5883.h"
-#include "string.h"
 #include "printf.h"
 #include "printf_config.h"
 #include "control.h"

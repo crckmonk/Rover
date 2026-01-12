@@ -129,12 +129,13 @@ uint8_t NRF24_IRQ_Handler(NRF24L01* dev) {
 		NRF24_CE_DISABLE(dev);
 		NRF24_WriteRegister(dev, NRF24_STATUS, &status);
 		NRF24_ReadRegister(dev, NRF24_FIFO_STATUS, &fifo_status);
-		if (dev->BUSY_FLAG == 1 && (fifo_status & 1) == 0) {
+		if ((fifo_status & 1) == 0) {
 			NRF24_ReadRXPayload(dev, dev->RX_BUFFER);
 			status |= 1 << 6;
 			NRF24_WriteRegister(dev, NRF24_STATUS, &status);
 			//NRF24_FlushRX(dev);
 			dev->BUSY_FLAG=0;
+			dev->IRQ_FLAG=1;
 		}
 		NRF24_CE_ENABLE(dev);
 	}
@@ -145,6 +146,7 @@ uint8_t NRF24_IRQ_Handler(NRF24L01* dev) {
 		NRF24_CE_ENABLE(dev);
 		NRF24_WriteRegister(dev, NRF24_STATUS, &status);
 		dev->BUSY_FLAG=0;
+		dev->IRQ_FLAG=2;
 	}
 	if ((status & (1 << 4))) {	// MaxRetransmits reached
 		status |= 1 << 4;
@@ -155,6 +157,7 @@ uint8_t NRF24_IRQ_Handler(NRF24L01* dev) {
 		NRF24_CE_ENABLE(dev);
 		NRF24_WriteRegister(dev, NRF24_STATUS, &status);
 		dev->BUSY_FLAG=0;
+		dev->IRQ_FLAG=3;
 	}
 	return status;
 }

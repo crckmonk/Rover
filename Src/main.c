@@ -53,7 +53,6 @@ uint8_t RxTxAddress[5] = {0xD7,0xD7,0xD7,0xD7,0xD7};
 uint8_t TxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
 uint8_t RxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
 NRF24L01 nrf;
-uint8_t ackCounter = 0;
 command_packet currentCommand = {0};
 /* USER CODE END PV */
 
@@ -165,10 +164,18 @@ void NRF24_PrintConfig(NRF24L01* dev) {
 }
 
 void NRF24_PrintState(NRF24L01* dev){
-  /* TODO: Move to nrf24.c or other comms lib*/
   uint8_t reg;
+  uint8_t str[32];
   NRF24_ReadRegister(dev, NRF24_CONFIG, &reg);
   printf("PWR_UP: %b PRIM_RX: %b CE: %b", (reg >> 1) & 1,  reg & 1, HAL_GPIO_ReadPin(dev->NRF24_CE_GPIOx, dev->NRF24_CE_GPIO_PIN));
+      NRF24_ReadRegister(dev, NRF24_FIFO_STATUS, &reg);
+    printf("FIFO_STATUS (0x17): 0x%02X\r\n", reg);
+    printf("  - TX: %s, RX: %s\r\n", (reg & 0x10) ? "Empty" : ((reg & 0x20) ? "Full" : "Data"), (reg & 0x01) ? "Empty" : ((reg & 0x02) ? "Full" : "Data"));
+    NRF24_ReadRegister(dev, NRF24_STATUS, &reg);
+    printf("STATUS (0x07): 0x%02X\r\n", reg);
+    printf("  - RX_DR: %d, TX_DS: %d, MAX_RT: %d\r\n", (reg >> 6) & 1, (reg >> 5) & 1, (reg >> 4) & 1);
+    printf("  - RX_P_NO: %d, TX_FULL: %d\r\n", (reg >> 1) & 7, reg & 1);
+    printf("IRQFlag: %d\r\n",nrf.IRQ_FLAG);
 }
 
 
@@ -216,8 +223,10 @@ int main(void)
   
   NRF24_PrintConfig(&nrf);
   
-  NRF24_CE_ENABLE(&nrf);
+  
 
+
+  NRF24_CE_ENABLE(&nrf);
   NRF24_PrintState(&nrf);
 
   //printf("TX ready with ACK Payload...\r\n");
@@ -226,23 +235,40 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  command_packet telemetryPacket;
+  uint8_t ackCounter = 0;
+  TxBuffer[0] = 0x11;
+  TxBuffer[1] = 0xAA;
+  TxBuffer[2] = 0xAA;
+  TxBuffer[3] = 0xAA;
+
+  command_packet rxCmdPacket;
+
+  NRF24_WriteAckPayload(&nrf,0,TxBuffer,NRF24_PAYLOAD_LENGTH);
   while (1)
   {
     /*
     TODO: Implement RX with Ack payloads 
     */
-    telemetryPacket.packet_type = 0x11;
-    telemetryPacket.left_motors_speed = 0xFF;
-    telemetryPacket.left_motors_speed = 0xFF;
 
-   Radio_NRF24RxMainLoop(&nrf, &telemetryPacket, RxBuffer);
-   if(RxBuffer[0] != 0){
-    for(uint8_t i =0;i<NRF24_PAYLOAD_LENGTH;i++){
-      printf("RX[%d]: %02x",i,RxBuffer[i]);
+   //Radio_NRF24RxMainLoop(&nrf, &telemetryPacket, &rxCmdPacket);
+   if(nrf.IRQ_FLAG == 1){
+      NRF24_PullPacket(&nrf,RxBuffer);
+      NRF24_WriteAckPayload(&nrf,0,TxBuffer,NRF24_PAYLOAD_LENGTH);
+      nrf.IRQ_FLAG = 0;
+      nrf.BUSY_FLAG =1;
+      if(RxBuffer[0]!= 0){
+        ackCounter++;
+        rxCmdPacket.packet_type = RxBuffer[0];
+        rxCmdPacket.left_motors_speed = RxBuffer[1];
+        rxCmdPacket.right_motors_speed = RxBuffer[2];
+        rxCmdPacket.buttons = RxBuffer[3];
+        printf("RX: Success. Executing %02x\r\n",rxCmdPacket.packet_type);
+        executeCommand(&rxCmdPacket);
+      }
     }
-    printf("\r\n");
-   }
+
+   
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

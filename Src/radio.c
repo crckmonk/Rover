@@ -36,23 +36,26 @@ uint8_t Radio_InitNRF24(NRF24L01* dev, SPI_HandleTypeDef *hspi, uint8_t* txAddre
   return status; 
 }
 
-uint8_t Radio_NRF24RxMainLoop(NRF24L01* dev, command_packet* dataPacket, uint8_t* rxBuffer ){
+uint8_t Radio_NRF24RxMainLoop(NRF24L01* dev, command_packet* dataPacket, command_packet *rxCmdPacket ){
     uint8_t status = 0;
     uint8_t cmdBuffer[NRF24_PAYLOAD_LENGTH];
     cmdBuffer[0] = dataPacket->packet_type;
     cmdBuffer[1] = dataPacket->left_motors_speed;
     cmdBuffer[2] = dataPacket->right_motors_speed;
     cmdBuffer[3] = dataPacket->buttons;
-    NRF24_WriteAckPayload(dev, 0, cmdBuffer, NRF24_PAYLOAD_LENGTH);
 
     if(dev->IRQ_FLAG == 1) { // RX Data Ready Interrupt
-        NRF24_PullPacket(dev, rxBuffer);
+        NRF24_PullPacket(dev, cmdBuffer);
+        NRF24_WriteAckPayload(dev, 0, cmdBuffer, NRF24_PAYLOAD_LENGTH);
         dev->IRQ_FLAG = 0;
     }
-
-    
-
-    dev->LAST_STATUS = status;
+    if(cmdBuffer[0]){
+        rxCmdPacket->packet_type = cmdBuffer[0];
+        rxCmdPacket->left_motors_speed = cmdBuffer[1];
+        rxCmdPacket->right_motors_speed = cmdBuffer[2];
+        rxCmdPacket->buttons = cmdBuffer[3];
+    }
+    status = dev->LAST_STATUS;
     return status;
 }
 
