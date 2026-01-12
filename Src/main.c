@@ -50,8 +50,8 @@ UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 uint8_t RxTxAddress[5] = {0xD7,0xD7,0xD7,0xD7,0xD7};
-uint8_t TxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
-uint8_t RxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
+uint8_t txBuffer[NRF24_PAYLOAD_LENGTH] = {0};
+uint8_t rxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
 NRF24L01 nrf;
 command_packet currentCommand = {0};
 /* USER CODE END PV */
@@ -217,7 +217,8 @@ int main(void)
   MX_SPI1_Init(); 
   /* USER CODE BEGIN 2 */
   Motor_Init(&htim2);
-
+  nrf.RX_BUFFER = rxBuffer;
+  nrf.TX_BUFFER = txBuffer;
   Radio_InitNRF24(&nrf, &hspi1,RxTxAddress,NRF24_STATE_RX);
   /*Initialization*/
   
@@ -236,14 +237,14 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   uint8_t ackCounter = 0;
-  TxBuffer[0] = 0x11;
-  TxBuffer[1] = 0xAA;
-  TxBuffer[2] = 0xAA;
-  TxBuffer[3] = 0xAA;
+  txBuffer[0] = 0x11;
+  txBuffer[1] = 0xAA;
+  txBuffer[2] = 0xAA;
+  txBuffer[3] = 0xAA;
 
   command_packet rxCmdPacket;
 
-  NRF24_WriteAckPayload(&nrf,0,TxBuffer,NRF24_PAYLOAD_LENGTH);
+  NRF24_WriteAckPayload(&nrf,0,txBuffer,NRF24_PAYLOAD_LENGTH);
   while (1)
   {
     /*
@@ -251,17 +252,17 @@ int main(void)
     */
 
    //Radio_NRF24RxMainLoop(&nrf, &telemetryPacket, &rxCmdPacket);
-   if(nrf.IRQ_FLAG == 1){
-      NRF24_PullPacket(&nrf,RxBuffer);
-      NRF24_WriteAckPayload(&nrf,0,TxBuffer,NRF24_PAYLOAD_LENGTH);
+   if(nrf.IRQ_FLAG & NRF24_IRQ_RX_DR){
+      NRF24_PullPacket(&nrf,rxBuffer);
+      NRF24_WriteAckPayload(&nrf,0,txBuffer,NRF24_PAYLOAD_LENGTH);
       nrf.IRQ_FLAG = 0;
       nrf.BUSY_FLAG =1;
-      if(RxBuffer[0]!= 0){
+      if(rxBuffer[0]!= 0){
         ackCounter++;
-        rxCmdPacket.packet_type = RxBuffer[0];
-        rxCmdPacket.left_motors_speed = RxBuffer[1];
-        rxCmdPacket.right_motors_speed = RxBuffer[2];
-        rxCmdPacket.buttons = RxBuffer[3];
+        rxCmdPacket.packet_type = rxBuffer[0];
+        rxCmdPacket.left_motors_speed = rxBuffer[1];
+        rxCmdPacket.right_motors_speed = rxBuffer[2];
+        rxCmdPacket.buttons = rxBuffer[3];
         printf("RX: Success. Executing %02x\r\n",rxCmdPacket.packet_type);
         executeCommand(&rxCmdPacket);
       }

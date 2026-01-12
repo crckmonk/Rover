@@ -47,6 +47,11 @@
 
 #define NRF24_SPI_TIMEOUT	10000
 #define NRF24_PAYLOAD_LENGTH   8 // 1B ~ 32B
+
+#define NRF24_IRQ_RX_DR    (1 << 0)
+#define NRF24_IRQ_TX_DS    (1 << 1)
+#define NRF24_IRQ_MAX_RT   (1 << 2)
+
 typedef enum{
 	NRF24_DATA_RATE_250KBPS=1,
 	NRF24_DATA_RATE_1MBPS=0,
@@ -91,7 +96,7 @@ typedef struct {
 	NRF24_TXRX_STATE	STATE;
 	uint8_t			BUSY_FLAG;
 	uint8_t 		LAST_STATUS;
-	volatile uint8_t IRQ_FLAG;
+	uint8_t IRQ_FLAG;
 
 	uint8_t*		RX_BUFFER;
 	uint8_t*		TX_BUFFER;
