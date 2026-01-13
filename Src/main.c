@@ -216,6 +216,10 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init(); 
   /* USER CODE BEGIN 2 */
+
+  printf("MPU6050 Init: %02x\r\n",MPU6050_Init(&hi2c1));
+
+
   Motor_Init(&htim2);
   nrf.RX_BUFFER = rxBuffer;
   nrf.TX_BUFFER = txBuffer;
@@ -240,7 +244,7 @@ int main(void)
   txBuffer[0] = 0x11;
   txBuffer[1] = 0xAA;
   txBuffer[2] = 0xAA;
-  txBuffer[3] = 0xAA;
+txBuffer[3] = ackCounter;
 
   command_packet rxCmdPacket;
 
@@ -248,9 +252,9 @@ int main(void)
   while (1)
   {
     /*
-    TODO: Implement RX with Ack payloads 
+    TODO: Implement RX with Ack payloads - Done
     */
-
+    
    //Radio_NRF24RxMainLoop(&nrf, &telemetryPacket, &rxCmdPacket);
    if(nrf.IRQ_FLAG & NRF24_IRQ_RX_DR){
       NRF24_PullPacket(&nrf,rxBuffer);
@@ -258,7 +262,7 @@ int main(void)
       nrf.IRQ_FLAG = 0;
       nrf.BUSY_FLAG =1;
       if(rxBuffer[0]!= 0){
-        ackCounter++;
+        txBuffer[3] = ackCounter +=1;
         rxCmdPacket.packet_type = rxBuffer[0];
         rxCmdPacket.left_motors_speed = rxBuffer[1];
         rxCmdPacket.right_motors_speed = rxBuffer[2];
