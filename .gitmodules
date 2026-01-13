@@ -1,3 +1,3 @@
-[submodule "external/printf"]
-	path = external/printf
-	url = https://github.com/mpaland/printf.git
+[submodule "Lib/MPU6500"]
+	path = Lib/MPU6500
+	url = https://github.com/SnoopyNomad/MPU6500_STM32_Library.git
