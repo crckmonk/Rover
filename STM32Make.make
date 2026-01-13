@@ -100,7 +100,10 @@ Src/fonts.c \
 Src/main.c \
 Src/mcutils.c \
 Src/motor.c \
+Src/mpu6050.c \
 Src/nrf24.c \
+Src/printf.c \
+Src/radio.c \
 Src/stm32f4xx_hal_msp.c \
 Src/stm32f4xx_it.c \
 Src/syscalls.c \

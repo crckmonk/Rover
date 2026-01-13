@@ -54,6 +54,7 @@ uint8_t txBuffer[NRF24_PAYLOAD_LENGTH] = {0};
 uint8_t rxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
 NRF24L01 nrf;
 command_packet currentCommand = {0};
+command_packet rxCmdPacket;
 /* USER CODE END PV */
 
 void executeCommand(command_packet *cmd);
@@ -216,8 +217,18 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init(); 
   /* USER CODE BEGIN 2 */
+  uint8_t reg[6];
+  uint16_t tmp[3];
+  int16_t temp;
+  printf("MPU6050 Init: %02x\r\n",MPU6500_Init(&hi2c1));
+  MPU650_Read_Gyro(&hi2c1, tmp);
+if(MPU6500_ReadTemp(&hi2c1, &temp) != HAL_OK){
+    Error_Handler();
+}
 
-  printf("MPU6050 Init: %02x\r\n",MPU6050_Init(&hi2c1));
+  printf("GYRO X: %04x Y: %04x Z: %04x\r\n",tmp[0],tmp[1],tmp[2]);
+  printf("TEMP RAW: %d\r\n",temp);
+
 
 
   Motor_Init(&htim2);
@@ -244,9 +255,8 @@ int main(void)
   txBuffer[0] = 0x11;
   txBuffer[1] = 0xAA;
   txBuffer[2] = 0xAA;
-txBuffer[3] = ackCounter;
+  txBuffer[3] = ackCounter;
 
-  command_packet rxCmdPacket;
 
   NRF24_WriteAckPayload(&nrf,0,txBuffer,NRF24_PAYLOAD_LENGTH);
   while (1)
