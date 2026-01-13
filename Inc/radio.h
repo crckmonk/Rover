@@ -3,7 +3,7 @@
 #ifndef RADIO_H
 #define RADIO_H
 
-#include "nrf24.h"
+#include "NRF24/nrf24.h"
 #include "control.h"
 #include <string.h>
 

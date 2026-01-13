@@ -94,22 +94,21 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
+Lib/MPU6500/mpu6500.c \
+Lib/NRF24/nrf24.c \
 Src/QMC5883.c \
 Src/assert_handler.c \
 Src/fonts.c \
 Src/main.c \
 Src/mcutils.c \
 Src/motor.c \
-Src/mpu6050.c \
-Src/nrf24.c \
 Src/printf.c \
 Src/radio.c \
 Src/stm32f4xx_hal_msp.c \
 Src/stm32f4xx_it.c \
 Src/syscalls.c \
 Src/sysmem.c \
-Src/system_stm32f4xx.c \
-external/printf/printf.c
+Src/system_stm32f4xx.c
 
 
 CXX_SOURCES = \
@@ -207,7 +206,7 @@ C_INCLUDES =  \
 -IDrivers/STM32F4xx_HAL_Driver/Inc \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 -IInc \
--Iexternal/printf
+-ILib
 
 
 

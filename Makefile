@@ -35,6 +35,9 @@ BUILD_DIR = build
 # source
 ######################################
 # C sources
+
+LIB_SOURCES = $(wildcard Lib/*/*.c)
+
 C_SOURCES =  \
 Src/main.c \
 Src/stm32f4xx_it.c \
@@ -61,7 +64,9 @@ Src/syscalls.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c \
 external/printf/printf.c \
-Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c \
+$(LIB_SOURCES)
+
 
 # ASM sources
 ASM_SOURCES =  \
@@ -129,7 +134,7 @@ C_INCLUDES =  \
 -IDrivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include \
--Iexternal/printf
+-ILib
 
 
 # compile gcc flags

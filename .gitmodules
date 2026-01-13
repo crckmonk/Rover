@@ -1,3 +1,6 @@
 [submodule "Lib/MPU6500"]
 	path = Lib/MPU6500
 	url = https://github.com/SnoopyNomad/MPU6500_STM32_Library.git
+[submodule "Lib/NRF24"]
+	path = Lib/NRF24
+	url = https://github.com/crckmonk/NRF24_Lib

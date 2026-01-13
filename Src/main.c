@@ -217,20 +217,6 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init(); 
   /* USER CODE BEGIN 2 */
-  uint8_t reg[6];
-  uint16_t tmp[3];
-  int16_t temp;
-  printf("MPU6050 Init: %02x\r\n",MPU6500_Init(&hi2c1));
-  MPU650_Read_Gyro(&hi2c1, tmp);
-if(MPU6500_ReadTemp(&hi2c1, &temp) != HAL_OK){
-    Error_Handler();
-}
-
-  printf("GYRO X: %04x Y: %04x Z: %04x\r\n",tmp[0],tmp[1],tmp[2]);
-  printf("TEMP RAW: %d\r\n",temp);
-
-
-
   Motor_Init(&htim2);
   nrf.RX_BUFFER = rxBuffer;
   nrf.TX_BUFFER = txBuffer;

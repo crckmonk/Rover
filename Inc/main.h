@@ -37,9 +37,9 @@ extern "C" {
 #include "printf.h"
 #include "printf_config.h"
 #include "control.h"
-#include "nrf24.h"
+#include "NRF24/nrf24.h"
 #include "radio.h"
-#include "mpu6050.h"
+#include "MPU6500/mpu6500.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
