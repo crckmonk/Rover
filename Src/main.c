@@ -18,7 +18,12 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#define SCANNER
+#include "i2c.h"
+#include "spi.h"
+#include "tim.h"
+#include "usart.h"
+#include "gpio.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -40,13 +45,6 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-I2C_HandleTypeDef hi2c1;
-
-SPI_HandleTypeDef hspi1;
-
-TIM_HandleTypeDef htim2;
-
-UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 uint8_t RxTxAddress[5] = {0xD7,0xD7,0xD7,0xD7,0xD7};
@@ -61,11 +59,6 @@ void executeCommand(command_packet *cmd);
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_TIM2_Init(void);
-static void MX_USART1_UART_Init(void);
-static void MX_I2C1_Init(void);
-static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 /* USER CODE END PFP */
@@ -182,6 +175,7 @@ void NRF24_PrintState(NRF24L01* dev){
 
 /* USER CODE END 0 */
 
+/* USER CODE END 0 */
 /**
   * @brief  The application entry point.
   * @retval int
@@ -217,6 +211,69 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init(); 
   /* USER CODE BEGIN 2 */
+
+HAL_StatusTypeDef status;
+
+// Basic initialization
+status = MPU6500_Init();
+if(status != HAL_OK){
+    Error_Handler();
+}
+
+// Optional: Read WHO_AM_I register to verify communication
+uint8_t whoami;
+status = MPU6500_ReadWhoAmI(&whoami);
+if(status != HAL_OK || whoami != 0x70){
+    Error_Handler();
+}
+
+int16_t accel_x, accel_y, accel_z;
+int16_t gyro_x, gyro_y, gyro_z;
+int16_t temperature;
+float accel_g[3];    // Acceleration in g
+float gyro_dps[3];   // Angular velocity in degrees per second
+float temp_c;        // Temperature in Celsius
+
+// Read raw sensor data
+status = MPU6500_ReadAccel(&accel_x, &accel_y, &accel_z);
+if(status != HAL_OK){
+    Error_Handler();
+}
+
+status = MPU6500_ReadGyro(&gyro_x, &gyro_y, &gyro_z);
+if(status != HAL_OK){
+    Error_Handler();
+}
+
+status = MPU6500_ReadTemp(&temperature);
+if(status != HAL_OK){
+    Error_Handler();
+}
+
+// Convert raw data to physical units
+// For ±16g range: 1g = 2048 LSB
+accel_g[0] = (float)accel_x / 2048.0f;
+accel_g[1] = (float)accel_y / 2048.0f;
+accel_g[2] = (float)accel_z / 2048.0f;
+
+// For ±2000°/s range: 1°/s = 16.4 LSB
+gyro_dps[0] = (float)gyro_x / 16.4f;
+gyro_dps[1] = (float)gyro_y / 16.4f;
+gyro_dps[2] = (float)gyro_z / 16.4f;
+
+// Temperature conversion: T(°C) = (TEMP_OUT / 340) + 36.53
+// temp_c = ((float)temperature / 340.0f) + 36.53f;
+
+// Temperature conversion: T(°C) = (TEMP_OUT / 333.87) + 21
+temp_c = ((float)temperature) / 333.87f + 21.0f;
+
+printf("Accel: X=%.2fg Y=%.2fg Z=%.2fg | Gyro: X=%.1f Y=%.1f Z=%.1f dps | Temp: %.1fC\r\n",
+       accel_g[0], accel_g[1], accel_g[2],
+       gyro_dps[0], gyro_dps[1], gyro_dps[2],
+       temp_c);
+
+Motor_Init(&htim2);
+
   Motor_Init(&htim2);
   nrf.RX_BUFFER = rxBuffer;
   nrf.TX_BUFFER = txBuffer;
@@ -240,7 +297,7 @@ int main(void)
   uint8_t ackCounter = 0;
   txBuffer[0] = 0x11;
   txBuffer[1] = 0xAA;
-  txBuffer[2] = 0xAA;
+  txBuffer[2] = (uint8_t)temp_c;
   txBuffer[3] = ackCounter;
 
 
@@ -250,11 +307,17 @@ int main(void)
     /*
     TODO: Implement RX with Ack payloads - Done
     */
-    
+   if(MPU6500_ReadTemp(&temperature) != HAL_OK){
+    printf("ERROR\r\n");
+  }
+  temp_c = ((float)temperature) / 333.87f + 21.0f;
+  txBuffer[2] = (uint8_t)temp_c;
    //Radio_NRF24RxMainLoop(&nrf, &telemetryPacket, &rxCmdPacket);
    if(nrf.IRQ_FLAG & NRF24_IRQ_RX_DR){
       NRF24_PullPacket(&nrf,rxBuffer);
       NRF24_WriteAckPayload(&nrf,0,txBuffer,NRF24_PAYLOAD_LENGTH);
+      printf("TX 0: %d 1: %d 2: %d 3: %d\r\n",txBuffer[0],txBuffer[1],txBuffer[2],txBuffer[3]);
+      printf("RX 0: %02x 1: %d 2: %f 3: %d\r\n",rxBuffer[0],rxBuffer[1],rxBuffer[2],rxBuffer[3]);
       nrf.IRQ_FLAG = 0;
       nrf.BUSY_FLAG =1;
       if(rxBuffer[0]!= 0){
@@ -276,6 +339,7 @@ int main(void)
   }
   /* USER CODE END 3 */
 }
+
 
 void executeCommand(command_packet* cmd) {
         switch(cmd->packet_type) {
@@ -349,251 +413,13 @@ void SystemClock_Config(void)
   }
 }
 
-/**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2C1_Init(void)
-{
-
-  /* USER CODE BEGIN I2C1_Init 0 */
-
-  /* USER CODE END I2C1_Init 0 */
-
-  /* USER CODE BEGIN I2C1_Init 1 */
-
-  /* USER CODE END I2C1_Init 1 */
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
-  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2C1_Init 2 */
-
-  /* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
-  * @brief SPI1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_SPI1_Init(void)
-{
-
-  /* USER CODE BEGIN SPI1_Init 0 */
-
-  /* USER CODE END SPI1_Init 0 */
-
-  /* USER CODE BEGIN SPI1_Init 1 */
-
-  /* USER CODE END SPI1_Init 1 */
-  /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 10;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN SPI1_Init 2 */
-
-  /* USER CODE END SPI1_Init 2 */
-
-}
-
-/**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM2_Init(void)
-{
-
-  /* USER CODE BEGIN TIM2_Init 0 */
-
-  /* USER CODE END TIM2_Init 0 */
-
-  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-  TIM_MasterConfigTypeDef sMasterConfig = {0};
-  TIM_OC_InitTypeDef sConfigOC = {0};
-
-  /* USER CODE BEGIN TIM2_Init 1 */
-
-  /* USER CODE END TIM2_Init 1 */
-  htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 72-1;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 100-1;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM2_Init 2 */
-
-  /* USER CODE END TIM2_Init 2 */
-  HAL_TIM_MspPostInit(&htim2);
-
-}
-
-/**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART1_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART1_Init 0 */
-
-  /* USER CODE END USART1_Init 0 */
-
-  /* USER CODE BEGIN USART1_Init 1 */
-
-  /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART1_Init 2 */
-
-  /* USER CODE END USART1_Init 2 */
-
-}
-
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  /* USER CODE BEGIN MX_GPIO_Init_1 */
-
-  /* USER CODE END MX_GPIO_Init_1 */
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI1_CSN_GPIO_Port, SPI1_CSN_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(NRF24_CE_GPIO_Port, NRF24_CE_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : PC13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : SPI1_CSN_Pin */
-  GPIO_InitStruct.Pin = SPI1_CSN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(SPI1_CSN_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : NRF24_CE_Pin */
-  GPIO_InitStruct.Pin = NRF24_CE_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(NRF24_CE_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : NRF24_IRQ_Pin */
-  GPIO_InitStruct.Pin = NRF24_IRQ_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(NRF24_IRQ_GPIO_Port, &GPIO_InitStruct);
-
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-
-  /* USER CODE BEGIN MX_GPIO_Init_2 */
-
-  /* USER CODE END MX_GPIO_Init_2 */
-}
+/* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if (GPIO_Pin == nrf.NRF24_IRQ_GPIO_PIN) {
     NRF24_IRQ_Handler(&nrf);
   }
 }
-
-
 /* USER CODE END 4 */
 
 /**

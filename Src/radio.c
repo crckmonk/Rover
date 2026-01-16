@@ -37,6 +37,7 @@ uint8_t Radio_InitNRF24(NRF24L01* dev, SPI_HandleTypeDef *hspi, uint8_t* txAddre
 }
 
 uint8_t Radio_NRF24RxMainLoop(NRF24L01* dev, command_packet* dataPacket, command_packet *rxCmdPacket ){
+    /*UNUSED for now; Needs fixing*/
     uint8_t status = 0;
     uint8_t cmdBuffer[NRF24_PAYLOAD_LENGTH];
     cmdBuffer[0] = dataPacket->packet_type;
