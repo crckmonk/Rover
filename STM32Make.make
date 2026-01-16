@@ -99,16 +99,21 @@ Lib/NRF24/nrf24.c \
 Src/QMC5883.c \
 Src/assert_handler.c \
 Src/fonts.c \
+Src/gpio.c \
+Src/i2c.c \
 Src/main.c \
 Src/mcutils.c \
 Src/motor.c \
 Src/printf.c \
 Src/radio.c \
+Src/spi.c \
 Src/stm32f4xx_hal_msp.c \
 Src/stm32f4xx_it.c \
 Src/syscalls.c \
 Src/sysmem.c \
-Src/system_stm32f4xx.c
+Src/system_stm32f4xx.c \
+Src/tim.c \
+Src/usart.c
 
 
 CXX_SOURCES = \

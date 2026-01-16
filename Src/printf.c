@@ -128,16 +128,6 @@ typedef struct {
   void* arg;
 } out_fct_wrap_type;
 
-extern UART_HandleTypeDef huart1;
-
-
-void _putchar(char character)
-{
-  uint8_t c[1];
-  c[0] = character & 0x00FF;
-  HAL_UART_Transmit(&huart1, &*c, 1, 10);
-}
-
 // internal buffer output
 static inline void _out_buffer(char character, void* buffer, size_t idx, size_t maxlen)
 {
