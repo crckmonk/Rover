@@ -36,8 +36,9 @@
 
 
 #include "QMC5883.h"
-#include <math.h>
-#include "mcutils.h"
+#define M_PI 3.14159
+//#include <math.h>
+//#include "mcutils.h"
 
 uint8_t QMC5883_Init(QMC_HandleTypedef *qmc, I2C_HandleTypeDef *i2c, QMC_DataRate_t data_rate)
 {
