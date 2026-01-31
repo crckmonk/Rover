@@ -36,7 +36,6 @@
 
 
 #include "QMC5883.h"
-#define M_PI 3.14159
 #include <math.h>
 //#include "mcutils.h"
 
