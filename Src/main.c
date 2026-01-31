@@ -65,7 +65,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 /* USER CODE BEGIN 0 */
 QMC_HandleTypedef	qmc_sensor;
 
-
+extern I2C_HandleTypeDef hi2c1;
+lsm303dlhc_data_raw_t lsm303dlhc_data_acc = { 0 };
+lsm303dlhc_data_raw_t lsm303dlhc_data_mag = { 0 };
+lsm303dlhc_data_t lsm303dlhc_data_acc_conv = { 0 };
+lsm303dlhc_data_t lsm303dlhc_data_mag_conv = { 0 };
 
 /* USER CODE END 0 */
 
@@ -103,28 +107,65 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
+	lsm303dlhc_mag_init_t lsm303dlhc_mag_init = { 0 };
+	
+	lsm303dlhc_acc_init.ctrl_reg1_a = LSM303DLHC_ACR1A_XEN | LSM303DLHC_ACR1A_YEN | LSM303DLHC_ACR1A_ZEN | LSM303DLHC_ACR1A_ODR30_100_HZ;
+	lsm303dlhc_acc_init.ctrl_reg4_a = LSM303DLHC_ACR4A_FS10_1MG;
+	
+	lsm303dlhc_mag_init.op = LSM303DLHC_MAGOP_CONT;
+	lsm303dlhc_mag_init.rate = LSM303DLHC_MAGRATE_15;
+	lsm303dlhc_mag_init.gain = LSM303DLHC_MAGGAIN_1_3;
+	lsm303dlhc_mag_init.auto_range = false;
 
-  if(  QMC5883_Init(&qmc_sensor, &hi2c1, qmc_continus) == QMC_OK )
-  {
-      printf("QMC5883L Initialization Successful\r\n");
-  }
-  else
-  {
-      printf("QMC5883L Initialization Failed\r\n");
-  }
+  if (lsm303dlhc_init_acc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
+    printf("LSM303DLHC Accel Init Error\r\n");
+    }
+
+	if (lsm303dlhc_init_mag(&hi2c1, &lsm303dlhc_mag_init) != LSM303DLHC_OK) {
+		printf("LSM303DLHC Mag Init Error\r\n");
+	}
+  // if(  QMC5883_Init(&qmc_sensor, &hi2c1, qmc_continus) == QMC_OK )
+  // {
+  //     printf("QMC5883L Initialization Successful\r\n");
+  // }
+  // else
+  // {
+  //     printf("QMC5883L Initialization Failed\r\n");
+  // }
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-      QMC5883_ReadAverage(&qmc_sensor, 10, 50);
-      printf("Heading: %d.%03d deg, Compass: %d.%03d deg\r\n",
-             qmc_sensor.avg_heading_whole,
-             qmc_sensor.avg_heading_decimal,
-             qmc_sensor.avg_compass_whole,
-             qmc_sensor.avg_compass_decimal);
-      printf("TEMP: %d \r\n",QMC5883_ReadTemp(&qmc_sensor));
+
+    if (lsm303dlhc_read_acc_raw(&lsm303dlhc_data_acc) == LSM303DLHC_OK) {
+			/* raw data in lsm303dlhc_data_acc */
+			/* if conversion is needed: */
+      printf("ACC X: %d, Y: %d, Z: %d\r\n", lsm303dlhc_data_acc.x, lsm303dlhc_data_acc.y, lsm303dlhc_data_acc.z);
+			lsm303dlhc_convert_acc(&lsm303dlhc_data_acc_conv, &lsm303dlhc_data_acc);
+      printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", lsm303dlhc_data_acc_conv.x, lsm303dlhc_data_acc_conv.y, lsm303dlhc_data_acc_conv.z);
+		} else {
+			/* handle error */
+		}
+		
+		if (lsm303dlhc_read_mag_raw(&lsm303dlhc_data_mag) == LSM303DLHC_OK) {
+			/* raw data in lsm303dlhc_data_mag */
+			/* if conversion is needed: */
+      printf("MAG X: %d, Y: %d, Z: %d\r\n", lsm303dlhc_data_mag.x, lsm303dlhc_data_mag.y, lsm303dlhc_data_mag.z);
+			lsm303dlhc_convert_mag(&lsm303dlhc_data_mag_conv, &lsm303dlhc_data_mag);
+      printf("MAG Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", lsm303dlhc_data_mag_conv.x, lsm303dlhc_data_mag_conv.y, lsm303dlhc_data_mag_conv.z);
+		} else {
+			/* handle error */
+		}
+      // QMC5883_ReadAverage(&qmc_sensor, 10, 50);
+      // printf("Heading: %d.%03d deg, Compass: %d.%03d deg\r\n",
+      //        qmc_sensor.avg_heading_whole,
+      //        qmc_sensor.avg_heading_decimal,
+      //        qmc_sensor.avg_compass_whole,
+      //        qmc_sensor.avg_compass_decimal);
+      // printf("TEMP: %d \r\n",QMC5883_ReadTemp(&qmc_sensor));
     HAL_Delay(50);
 
     /* USER CODE END WHILE */

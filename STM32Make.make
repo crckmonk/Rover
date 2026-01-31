@@ -94,7 +94,6 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
-Lib/MPU6500/mpu6500.c \
 Lib/NRF24/nrf24.c \
 Lib/NRF24/radio.c \
 Src/QMC5883.c \
@@ -102,6 +101,7 @@ Src/assert_handler.c \
 Src/fonts.c \
 Src/gpio.c \
 Src/i2c.c \
+Src/lsm303dlhc.c \
 Src/main.c \
 Src/mcutils.c \
 Src/motor.c \

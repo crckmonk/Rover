@@ -39,7 +39,7 @@ extern "C" {
 #include "control.h"
 #include "NRF24/nrf24.h"
 #include "NRF24/radio.h"
-#include "MPU6500/mpu6500.h"
+#include "lsm303dlhc.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
