@@ -1,5 +1,16 @@
 #include "lsm303dlhc.h"
 
+
+/*
+    TODO: 
+        - Refactor to fit code style
+        - implement oversampling
+        - implement temperature reading
+        - Calibration
+
+*/
+
+
 /* private variables */
 static I2C_HandleTypeDef *lsm303dlhc_i2c = NULL;
 static lsm303dlhc_mag_gain_t lsm303dlhc_mag_magin = LSM303DLHC_MAGGAIN_1_3;
