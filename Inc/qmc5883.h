@@ -33,6 +33,13 @@
  * Versoin: 0.9
  */
 
+ /*
+	TODO:
+		- Calibration Function
+		
+ */
+
+
 #ifndef SRC_QMC5883L_QMC5883_H_
 #define SRC_QMC5883L_QMC5883_H_
 

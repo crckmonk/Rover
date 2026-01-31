@@ -4,3 +4,6 @@
 [submodule "Lib/NRF24"]
 	path = Lib/NRF24
 	url = https://github.com/crckmonk/NRF24_Lib
+[submodule "Lib/MavLink"]
+	path = Lib/MavLink
+	url = https://github.com/mavlink/c_library_v2
