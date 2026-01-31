@@ -48,10 +48,10 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, SPI1_CSN_Pin|LED_GREEN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(NRF24_CSN_GPIO_Port, NRF24_CSN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, NRF24_CE_Pin|LED_RED_Pin|LED_BLUE_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(NRF24_CE_GPIO_Port, NRF24_CE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PC13 */
   GPIO_InitStruct.Pin = GPIO_PIN_13;
@@ -60,19 +60,19 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SPI1_CSN_Pin LED_GREEN_Pin */
-  GPIO_InitStruct.Pin = SPI1_CSN_Pin|LED_GREEN_Pin;
+  /*Configure GPIO pin : NRF24_CSN_Pin */
+  GPIO_InitStruct.Pin = NRF24_CSN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(NRF24_CSN_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : NRF24_CE_Pin LED_RED_Pin LED_BLUE_Pin */
-  GPIO_InitStruct.Pin = NRF24_CE_Pin|LED_RED_Pin|LED_BLUE_Pin;
+  /*Configure GPIO pin : NRF24_CE_Pin */
+  GPIO_InitStruct.Pin = NRF24_CE_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  HAL_GPIO_Init(NRF24_CE_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : NRF24_IRQ_Pin */
   GPIO_InitStruct.Pin = NRF24_IRQ_Pin;

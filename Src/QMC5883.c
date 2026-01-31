@@ -37,7 +37,7 @@
 
 #include "QMC5883.h"
 #define M_PI 3.14159
-//#include <math.h>
+#include <math.h>
 //#include "mcutils.h"
 
 uint8_t QMC5883_Init(QMC_HandleTypedef *qmc, I2C_HandleTypeDef *i2c, QMC_DataRate_t data_rate)
@@ -55,6 +55,13 @@ uint8_t QMC5883_Init(QMC_HandleTypedef *qmc, I2C_HandleTypeDef *i2c, QMC_DataRat
 	return QMC_OK;
 }
 
+
+uint16_t QMC5883_ReadTemp(QMC_HandleTypedef *qmc){
+	uint8_t temp_low, temp_high;
+	HAL_I2C_Mem_Read(qmc->i2c, QMC_I2C_Address, 0x07, 1, &temp_low,1,100);
+	HAL_I2C_Mem_Read(qmc->i2c, QMC_I2C_Address, 0x08, 1, &temp_high,1,100);
+	return (((uint16_t)temp_high << 8 | temp_low) - QMC5883_TEMP_OFFSET);
+}
 
 uint8_t QMC5883_Read(QMC_HandleTypedef *qmc)
 {

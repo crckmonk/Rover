@@ -96,6 +96,7 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
 Lib/MPU6500/mpu6500.c \
 Lib/NRF24/nrf24.c \
+Lib/NRF24/radio.c \
 Src/QMC5883.c \
 Src/assert_handler.c \
 Src/fonts.c \
@@ -105,7 +106,6 @@ Src/main.c \
 Src/mcutils.c \
 Src/motor.c \
 Src/printf.c \
-Src/radio.c \
 Src/spi.c \
 Src/stm32f4xx_hal_msp.c \
 Src/stm32f4xx_it.c \

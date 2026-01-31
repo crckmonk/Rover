@@ -52,7 +52,7 @@
 
 #define qmc_stanby		0
 #define qmc_continus	1
-
+#define QMC5883_TEMP_OFFSET  50000
 
 typedef enum
 {
@@ -86,6 +86,7 @@ typedef struct
 
 uint8_t QMC5883_Init(QMC_HandleTypedef *qmc, I2C_HandleTypeDef *i2c, QMC_DataRate_t data_rate);
 uint8_t QMC5883_ReadAverage(QMC_HandleTypedef *qmc, uint32_t maxAvrage, uint32_t timePerAvg);
+uint16_t QMC5883_ReadTemp(QMC_HandleTypedef *qmc);
 uint8_t QMC5883_Read(QMC_HandleTypedef *qmc);
 float   QMC5883_ReadHeading(QMC_HandleTypedef *qmc);
 uint8_t QMC5883_Standby(QMC_HandleTypedef *qmc);

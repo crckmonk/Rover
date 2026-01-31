@@ -38,7 +38,7 @@ extern "C" {
 #include "printf_config.h"
 #include "control.h"
 #include "NRF24/nrf24.h"
-#include "radio.h"
+#include "NRF24/radio.h"
 #include "MPU6500/mpu6500.h"
 /* USER CODE END Includes */
 
@@ -65,19 +65,13 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define SPI1_CSN_Pin GPIO_PIN_4
-#define SPI1_CSN_GPIO_Port GPIOA
+#define NRF24_CSN_Pin GPIO_PIN_4
+#define NRF24_CSN_GPIO_Port GPIOA
 #define NRF24_CE_Pin GPIO_PIN_0
 #define NRF24_CE_GPIO_Port GPIOB
 #define NRF24_IRQ_Pin GPIO_PIN_1
 #define NRF24_IRQ_GPIO_Port GPIOB
 #define NRF24_IRQ_EXTI_IRQn EXTI1_IRQn
-#define LED_GREEN_Pin GPIO_PIN_15
-#define LED_GREEN_GPIO_Port GPIOA
-#define LED_RED_Pin GPIO_PIN_3
-#define LED_RED_GPIO_Port GPIOB
-#define LED_BLUE_Pin GPIO_PIN_4
-#define LED_BLUE_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

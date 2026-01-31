@@ -55,8 +55,6 @@ command_packet currentCommand = {0};
 command_packet rxCmdPacket;
 /* USER CODE END PV */
 
-void executeCommand(command_packet *cmd);
-
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
@@ -67,115 +65,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 /* USER CODE BEGIN 0 */
 QMC_HandleTypedef	qmc_sensor;
 
-void NRF24_PrintConfig(NRF24L01* dev) {
-    /* TODO: Move to nrf24.c or other comms lib*/
-    uint8_t reg;
-    uint8_t addr[5];
-    
-    printf("\r\n=== NRF24L01 Configuration ===\r\n");
-    
-    // CONFIG register
-    NRF24_ReadRegister(dev, NRF24_CONFIG, &reg);
-    printf("CONFIG (0x00): 0x%02X\r\n", reg);
-    printf("  - PWR_UP: %d\r\n", (reg >> 1) & 1);
-    printf("  - PRIM_RX: %d (%s)\r\n", reg & 1, (reg & 1) ? "RX" : "TX");
-    printf("  - CRC: %s, Width: %dB\r\n", (reg >> 3) & 1 ? "ON" : "OFF", ((reg >> 2) & 1) + 1);
-    
-    // EN_AA register
-    NRF24_ReadRegister(dev, NRF24_EN_AA, &reg);
-    printf("EN_AA (0x01): 0x%02X\r\n", reg);
-    
-    // EN_RXADDR register
-    NRF24_ReadRegister(dev, NRF24_EN_RXADDR, &reg);
-    printf("EN_RXADDR (0x02): 0x%02X\r\n", reg);
-    
-    // SETUP_AW register
-    NRF24_ReadRegister(dev, NRF24_SETUP_AW, &reg);
-    printf("SETUP_AW (0x03): 0x%02X (%d bytes)\r\n", reg, reg + 2);
-    
-    // SETUP_RETR register
-    NRF24_ReadRegister(dev, NRF24_SETUP_RETR, &reg);
-    printf("SETUP_RETR (0x04): 0x%02X\r\n", reg);
-    printf("  - ARD: %d (%d us)\r\n", (reg >> 4) & 0x0F, ((reg >> 4) & 0x0F) * 250 + 250);
-    printf("  - ARC: %d retransmits\r\n", reg & 0x0F);
-    
-    // RF_CH register
-    NRF24_ReadRegister(dev, NRF24_RF_CH, &reg);
-    printf("RF_CH (0x05): %d (%.0f MHz)\r\n", reg, 2400.0 + reg);
-    
-    // RF_SETUP register
-    NRF24_ReadRegister(dev, NRF24_RF_SETUP, &reg);
-    printf("RF_SETUP (0x06): 0x%02X\r\n", reg);
-    printf("  - Data Rate: %s\r\n", 
-           ((reg >> 3) & 1) ? "2Mbps" : (((reg >> 5) & 1) ? "250kbps" : "1Mbps"));
-    printf("  - TX Power: %d dBm\r\n", -18 + ((reg >> 1) & 3) * 6);
-    
-    // STATUS register
-    NRF24_ReadRegister(dev, NRF24_STATUS, &reg);
-    printf("STATUS (0x07): 0x%02X\r\n", reg);
-    printf("  - RX_DR: %d, TX_DS: %d, MAX_RT: %d\r\n", 
-           (reg >> 6) & 1, (reg >> 5) & 1, (reg >> 4) & 1);
-    printf("  - RX_P_NO: %d, TX_FULL: %d\r\n", (reg >> 1) & 7, reg & 1);
-    
-    // OBSERVE_TX register
-    NRF24_ReadRegister(dev, NRF24_OBSERVE_TX, &reg);
-    printf("OBSERVE_TX (0x08): 0x%02X (Lost: %d, Retrans: %d)\r\n", 
-           reg, (reg >> 4) & 0x0F, reg & 0x0F);
-    
-    // RX_ADDR_P0
-    uint8_t tx[5] = {0};
-    NRF24_SendCommand(dev, NRF24_CMD_R_REGISTER | NRF24_RX_ADDR_P0, tx, addr, 5);
-    printf("RX_ADDR_P0: %02X:%02X:%02X:%02X:%02X\r\n", 
-           addr[0], addr[1], addr[2], addr[3], addr[4]);
-    
-    // TX_ADDR
-    NRF24_SendCommand(dev, NRF24_CMD_R_REGISTER | NRF24_TX_ADDR, tx, addr, 5);
-    printf("TX_ADDR:    %02X:%02X:%02X:%02X:%02X\r\n", 
-           addr[0], addr[1], addr[2], addr[3], addr[4]);
-    
-    // RX_PW_P0
-    NRF24_ReadRegister(dev, NRF24_RX_PW_P0, &reg);
-    printf("RX_PW_P0 (0x11): %d bytes\r\n", reg);
-    
-    // FIFO_STATUS register
-    NRF24_ReadRegister(dev, NRF24_FIFO_STATUS, &reg);
-    printf("FIFO_STATUS (0x17): 0x%02X\r\n", reg);
-    printf("  - TX: %s, RX: %s\r\n",
-           (reg & 0x10) ? "Empty" : ((reg & 0x20) ? "Full" : "Data"),
-           (reg & 0x01) ? "Empty" : ((reg & 0x02) ? "Full" : "Data"));
-    
-    // DYNPD register
-    NRF24_ReadRegister(dev, NRF24_DYNPD, &reg);
-    printf("DYNPD (0x1C): 0x%02X 0b%08b\r\n", reg,reg);
-    
-    // FEATURE register
-    NRF24_ReadRegister(dev, NRF24_FEATURE, &reg);
-    printf("FEATURE (0x1D): 0x%02X\r\n", reg);
-    printf("  - EN_DPL: %d, EN_ACK_PAY: %d, EN_DYN_ACK: %d\r\n",
-           (reg >> 2) & 1, (reg >> 1) & 1, reg & 1);
-    
-    printf("==============================\r\n\r\n");
-}
-
-void NRF24_PrintState(NRF24L01* dev){
-  uint8_t reg;
-  uint8_t str[32];
-  NRF24_ReadRegister(dev, NRF24_CONFIG, &reg);
-  printf("PWR_UP: %b PRIM_RX: %b CE: %b", (reg >> 1) & 1,  reg & 1, HAL_GPIO_ReadPin(dev->NRF24_CE_GPIOx, dev->NRF24_CE_GPIO_PIN));
-      NRF24_ReadRegister(dev, NRF24_FIFO_STATUS, &reg);
-    printf("FIFO_STATUS (0x17): 0x%02X\r\n", reg);
-    printf("  - TX: %s, RX: %s\r\n", (reg & 0x10) ? "Empty" : ((reg & 0x20) ? "Full" : "Data"), (reg & 0x01) ? "Empty" : ((reg & 0x02) ? "Full" : "Data"));
-    NRF24_ReadRegister(dev, NRF24_STATUS, &reg);
-    printf("STATUS (0x07): 0x%02X\r\n", reg);
-    printf("  - RX_DR: %d, TX_DS: %d, MAX_RT: %d\r\n", (reg >> 6) & 1, (reg >> 5) & 1, (reg >> 4) & 1);
-    printf("  - RX_P_NO: %d, TX_FULL: %d\r\n", (reg >> 1) & 7, reg & 1);
-    printf("IRQFlag: %d\r\n",nrf.IRQ_FLAG);
-}
 
 
 /* USER CODE END 0 */
 
-/* USER CODE END 0 */
 /**
   * @brief  The application entry point.
   * @retval int
@@ -184,7 +77,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  //IMPORTANT: in launch.json set "device": "stm32f411xe" without .s
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -207,162 +100,38 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_USART1_UART_Init();
-  
   MX_I2C1_Init();
-  MX_SPI1_Init(); 
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-HAL_StatusTypeDef status;
-
-// Basic initialization
-status = MPU6500_Init();
-if(status != HAL_OK){
-    Error_Handler();
-}
-
-// Optional: Read WHO_AM_I register to verify communication
-uint8_t whoami;
-status = MPU6500_ReadWhoAmI(&whoami);
-if(status != HAL_OK || whoami != 0x70){
-    Error_Handler();
-}
-
-int16_t accel_x, accel_y, accel_z;
-int16_t gyro_x, gyro_y, gyro_z;
-int16_t temperature;
-float accel_g[3];    // Acceleration in g
-float gyro_dps[3];   // Angular velocity in degrees per second
-float temp_c;        // Temperature in Celsius
-
-// Read raw sensor data
-status = MPU6500_ReadAccel(&accel_x, &accel_y, &accel_z);
-if(status != HAL_OK){
-    Error_Handler();
-}
-
-status = MPU6500_ReadGyro(&gyro_x, &gyro_y, &gyro_z);
-if(status != HAL_OK){
-    Error_Handler();
-}
-
-status = MPU6500_ReadTemp(&temperature);
-if(status != HAL_OK){
-    Error_Handler();
-}
-
-// Convert raw data to physical units
-// For ±16g range: 1g = 2048 LSB
-accel_g[0] = (float)accel_x / 2048.0f;
-accel_g[1] = (float)accel_y / 2048.0f;
-accel_g[2] = (float)accel_z / 2048.0f;
-
-// For ±2000°/s range: 1°/s = 16.4 LSB
-gyro_dps[0] = (float)gyro_x / 16.4f;
-gyro_dps[1] = (float)gyro_y / 16.4f;
-gyro_dps[2] = (float)gyro_z / 16.4f;
-
-// Temperature conversion: T(°C) = (TEMP_OUT / 340) + 36.53
-// temp_c = ((float)temperature / 340.0f) + 36.53f;
-
-// Temperature conversion: T(°C) = (TEMP_OUT / 333.87) + 21
-temp_c = ((float)temperature) / 333.87f + 21.0f;
-
-printf("Accel: X=%.2fg Y=%.2fg Z=%.2fg | Gyro: X=%.1f Y=%.1f Z=%.1f dps | Temp: %.1fC\r\n",
-       accel_g[0], accel_g[1], accel_g[2],
-       gyro_dps[0], gyro_dps[1], gyro_dps[2],
-       temp_c);
-
-Motor_Init(&htim2);
-
-  Motor_Init(&htim2);
-  nrf.RX_BUFFER = rxBuffer;
-  nrf.TX_BUFFER = txBuffer;
-  Radio_InitNRF24(&nrf, &hspi1,RxTxAddress,NRF24_STATE_RX);
-  /*Initialization*/
-  
-  NRF24_PrintConfig(&nrf);
-  
-  
-
-
-  NRF24_CE_ENABLE(&nrf);
-  NRF24_PrintState(&nrf);
-
-  //printf("TX ready with ACK Payload...\r\n");
-  /*Initialization DONE*/
-  /* USER CODE END 2 */  
+  if(  QMC5883_Init(&qmc_sensor, &hi2c1, qmc_continus) == QMC_OK )
+  {
+      printf("QMC5883L Initialization Successful\r\n");
+  }
+  else
+  {
+      printf("QMC5883L Initialization Failed\r\n");
+  }
+  /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint8_t ackCounter = 0;
-  txBuffer[0] = 0x11;
-  txBuffer[1] = 0xAA;
-  txBuffer[2] = (uint8_t)temp_c;
-  txBuffer[3] = ackCounter;
-
-  printf("Initialized\r\n");
-  NRF24_WriteAckPayload(&nrf,0,txBuffer,NRF24_PAYLOAD_LENGTH);
   while (1)
   {
-
-  //  if(MPU6500_ReadTemp(&temperature) != HAL_OK){
-  //   printf("ERROR\r\n");
-  // }
-  // temp_c = ((float)temperature) / 333.87f + 21.0f;
-  // txBuffer[2] = (uint8_t)temp_c;
-   //Radio_NRF24RxMainLoop(&nrf, &telemetryPacket, &rxCmdPacket);
-   if(nrf.IRQ_FLAG & NRF24_IRQ_RX_DR){
-      NRF24_PullPacket(&nrf,rxBuffer);
-      NRF24_WriteAckPayload(&nrf,0,txBuffer,NRF24_PAYLOAD_LENGTH);
-      printf("TX 0: %d 1: %d 2: %d 3: %d\r\n",txBuffer[0],txBuffer[1],txBuffer[2],txBuffer[3]);
-      printf("RX 0: %02x 1: %d 2: %f 3: %d\r\n",rxBuffer[0],rxBuffer[1],rxBuffer[2],rxBuffer[3]);
-      nrf.IRQ_FLAG = 0;
-      nrf.BUSY_FLAG =1;
-      if(rxBuffer[0]!= 0){
-        txBuffer[3] = ackCounter +=1;
-        rxCmdPacket.packet_type = rxBuffer[0];
-        rxCmdPacket.left_motors_speed = rxBuffer[1];
-        rxCmdPacket.right_motors_speed = rxBuffer[2];
-        rxCmdPacket.buttons = rxBuffer[3];
-        printf("RX: Success. Executing %02x\r\n",rxCmdPacket.packet_type);
-        executeCommand(&rxCmdPacket);
-      }
-    }
-
-   
+      QMC5883_ReadAverage(&qmc_sensor, 10, 50);
+      printf("Heading: %d.%03d deg, Compass: %d.%03d deg\r\n",
+             qmc_sensor.avg_heading_whole,
+             qmc_sensor.avg_heading_decimal,
+             qmc_sensor.avg_compass_whole,
+             qmc_sensor.avg_compass_decimal);
+      printf("TEMP: %d \r\n",QMC5883_ReadTemp(&qmc_sensor));
+    HAL_Delay(50);
 
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
-}
-
-
-void executeCommand(command_packet* cmd) {
-        switch(cmd->packet_type) {
-          case 0x41: // GO
-            Set_Motor_Speed(&htim2, LEFT, FORWARD, cmd->left_motors_speed);
-            Set_Motor_Speed(&htim2, RIGHT, FORWARD, cmd->right_motors_speed);
-            HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
-            break;
-          case 0x42: // STOP
-            Set_Motor_Speed(&htim2, BOTH, BRAKE, STOP);
-            HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
-            HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
-            break;
-          case 0x43: // RVS
-            Set_Motor_Speed(&htim2, LEFT, REVERSE, cmd->left_motors_speed);
-            Set_Motor_Speed(&htim2, RIGHT, REVERSE, cmd->right_motors_speed);
-            HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
-            HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
-            break;
-          case 0x44: // KEEP
-            HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
-            HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_RESET);
-            HAL_GPIO_WritePin(GPIOC,GPIO_PIN_13,GPIO_PIN_RESET); // Blue LED ON
-            break;
-        }
 }
 
 /**
