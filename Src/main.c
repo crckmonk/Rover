@@ -26,7 +26,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <math.h>
 
 /* USER CODE END Includes */
 
@@ -118,8 +117,7 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
 	lsm303dlhc_mag_init.rate = LSM303DLHC_MAGRATE_15;
 	lsm303dlhc_mag_init.gain = LSM303DLHC_MAGGAIN_1_3;
 	lsm303dlhc_mag_init.auto_range = false;
-  float compass = 0.0f;
-  float heading = 0.0f;
+
 
   if (lsm303dlhc_init_acc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
     printf("LSM303DLHC Accel Init Error\r\n");
@@ -155,14 +153,8 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
 		
 		if (lsm303dlhc_read_mag_raw(&lsm303dlhc_data_mag) == LSM303DLHC_OK) {
 			/* raw data in lsm303dlhc_data_mag */
-			/* if conversion is needed: */
 
-      compass = atan2f((float)lsm303dlhc_data_mag.y, (float)lsm303dlhc_data_mag.x) * (180.0f / M_PI);
-      heading = compass>0? compass : compass + 360.0f;
-
-			lsm303dlhc_convert_mag(&lsm303dlhc_data_mag_conv, &lsm303dlhc_data_mag);
-      printf("MAG Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", lsm303dlhc_data_mag_conv.x, lsm303dlhc_data_mag_conv.y, lsm303dlhc_data_mag_conv.z);
-      printf("Compass Heading: %.2f deg\r\n", heading);
+      printf("Compass Heading: %0.2f deg\r\n", LSM303_GetHeadingDegrees(&lsm303dlhc_data_mag));
 		} else {
 			/* handle error */
 		}

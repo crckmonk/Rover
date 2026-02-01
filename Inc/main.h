@@ -74,7 +74,6 @@ void Error_Handler(void);
 #define NRF24_IRQ_EXTI_IRQn EXTI1_IRQn
 
 /* USER CODE BEGIN Private defines */
-#define M_PI 3.14159
 
 /* USER CODE END Private defines */
 

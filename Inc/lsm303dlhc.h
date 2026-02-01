@@ -11,6 +11,10 @@
 extern "C" {
 #endif
 
+#ifndef M_PI
+#define M_PI 3.14159
+#endif
+
 /* i2c addresses */
 #define LSM303DLHC_ADDR_ACC    0x32
 #define LSM303DLHC_ADDR_MAG    0x3C
@@ -183,6 +187,8 @@ lsm303dlhc_result_t lsm303dlhc_set_mag_gain(lsm303dlhc_mag_gain_t gain);
 lsm303dlhc_result_t lsm303dlhc_set_mag_rate(lsm303dlhc_mag_rate_t rate);
 lsm303dlhc_result_t lsm303dlhc_read_mag_raw(lsm303dlhc_data_raw_t *data);
 void lsm303dlhc_convert_mag(lsm303dlhc_data_t *conv, const lsm303dlhc_data_raw_t *raw);
+
+float LSM303_GetHeadingDegrees(lsm303dlhc_data_raw_t *magData);
 
 /* C++ detection */
 #ifdef __cplusplus

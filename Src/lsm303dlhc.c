@@ -1,5 +1,6 @@
 #include "lsm303dlhc.h"
 
+#include <math.h>
 
 /*
     TODO: 
@@ -9,6 +10,8 @@
         - Calibration
 
 */
+
+#define DECLINATION_ANGLE 8.0f // Determined by location
 
 
 /* private variables */
@@ -298,6 +301,38 @@ void lsm303dlhc_convert_mag(lsm303dlhc_data_t *conv, const lsm303dlhc_data_raw_t
     conv->x = ((float) raw->x / lsm303dlhc_mag_gauss_lsb_xy) * LSM303DLHC_MAG_SENSORS_GAUSS_TO_MICROTESLA;
     conv->y = ((float) raw->y / lsm303dlhc_mag_gauss_lsb_xy) * LSM303DLHC_MAG_SENSORS_GAUSS_TO_MICROTESLA;
     conv->z = ((float) raw->z / lsm303dlhc_mag_gauss_lsb_z) * LSM303DLHC_MAG_SENSORS_GAUSS_TO_MICROTESLA;
+}
+
+
+float LSM303_GetHeadingDegrees(lsm303dlhc_data_raw_t *magData)
+{
+    float heading = 0.0f;
+
+
+    heading = atan2f((float)magData->y, (float)magData->x) * 180.00/M_PI;
+
+    heading += DECLINATION_ANGLE;
+    
+    heading = heading < 0 ? heading + 360.0f: heading ;
+
+    // Convert radians to degrees
+    return heading;
+}   
+
+
+float LSM303_GetHeadingDegreesTiltCompensated(lsm303dlhc_data_raw_t *magData, lsm303dlhc_data_raw_t *accData){
+    float heading = 0.0f;
+
+    float roll = atan2f((float)accData->y, (float)accData->z);
+    float pitch = atan2f(-(float)accData->x,sqrtf((float)accData->y * (float)accData->y + (float)accData->z * (float)accData->z));
+
+    float magXh = (float)magData->x * cosf(pitch) + (float)magData->y * sinf(roll) * sinf(pitch) + (float)magData->z * cosf(roll) * sinf(pitch);
+    float magYh = (float)magData->y * cosf(roll) - (float)magData->z * sinf(roll);
+
+    heading = (atan2f(magYh, magXh) * (180.0f / M_PI)) + DECLINATION_ANGLE;
+
+    
+
 }
 
 /* private functions */
