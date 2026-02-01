@@ -154,7 +154,8 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
 		if (lsm303dlhc_read_mag_raw(&lsm303dlhc_data_mag) == LSM303DLHC_OK) {
 			/* raw data in lsm303dlhc_data_mag */
 
-      printf("Compass Heading: %0.2f deg\r\n", LSM303_GetHeadingDegrees(&lsm303dlhc_data_mag));
+      printf("Tilt compensated Heading: %0.2f deg\r\n", LSM303_GetHeadingDegreesTiltCompensated(&lsm303dlhc_data_mag, &lsm303dlhc_data_acc));
+      printf("Raw Heading: %0.2f deg\r\n", LSM303_GetHeadingDegrees(&lsm303dlhc_data_mag));      
 		} else {
 			/* handle error */
 		}

@@ -331,7 +331,14 @@ float LSM303_GetHeadingDegreesTiltCompensated(lsm303dlhc_data_raw_t *magData, ls
 
     heading = (atan2f(magYh, magXh) * (180.0f / M_PI)) + DECLINATION_ANGLE;
 
-    
+    if (heading < 0.0f) {
+        heading += 360.0f;
+    }
+    if (heading >= 360.0f) {
+        heading -= 360.0f;
+    }
+
+    return heading;
 
 }
 

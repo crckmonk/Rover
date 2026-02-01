@@ -190,6 +190,9 @@ void lsm303dlhc_convert_mag(lsm303dlhc_data_t *conv, const lsm303dlhc_data_raw_t
 
 float LSM303_GetHeadingDegrees(lsm303dlhc_data_raw_t *magData);
 
+float LSM303_GetHeadingDegreesTiltCompensated(lsm303dlhc_data_raw_t *magData,
+                                              lsm303dlhc_data_raw_t *accData);
+
 /* C++ detection */
 #ifdef __cplusplus
 }
