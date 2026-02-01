@@ -116,7 +116,7 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
 	lsm303dlhc_mag_init.op = LSM303DLHC_MAGOP_CONT;
 	lsm303dlhc_mag_init.rate = LSM303DLHC_MAGRATE_15;
 	lsm303dlhc_mag_init.gain = LSM303DLHC_MAGGAIN_1_3;
-	lsm303dlhc_mag_init.auto_range = false;
+	lsm303dlhc_mag_init.auto_range = true;
 
 
   if (lsm303dlhc_init_acc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
@@ -138,24 +138,27 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  printf("START\r\n");
+
+  LSM303_CalibrateMagneto();
+  printf("Calibration done\r\n");
   while (1)
   {
 
     if (lsm303dlhc_read_acc_raw(&lsm303dlhc_data_acc) == LSM303DLHC_OK) {
 			/* raw data in lsm303dlhc_data_acc */
 			/* if conversion is needed: */
-      printf("ACC X: %d, Y: %d, Z: %d\r\n", lsm303dlhc_data_acc.x, lsm303dlhc_data_acc.y, lsm303dlhc_data_acc.z);
 			lsm303dlhc_convert_acc(&lsm303dlhc_data_acc_conv, &lsm303dlhc_data_acc);
-      printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", lsm303dlhc_data_acc_conv.x, lsm303dlhc_data_acc_conv.y, lsm303dlhc_data_acc_conv.z);
+      //printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", lsm303dlhc_data_acc_conv.x, lsm303dlhc_data_acc_conv.y, lsm303dlhc_data_acc_conv.z);
 		} else {
 			/* handle error */
 		}
 		
 		if (lsm303dlhc_read_mag_raw(&lsm303dlhc_data_mag) == LSM303DLHC_OK) {
 			/* raw data in lsm303dlhc_data_mag */
-
-      printf("Tilt compensated Heading: %0.2f deg\r\n", LSM303_GetHeadingDegreesTiltCompensated(&lsm303dlhc_data_mag, &lsm303dlhc_data_acc));
       printf("Raw Heading: %0.2f deg\r\n", LSM303_GetHeadingDegrees(&lsm303dlhc_data_mag));      
+      printf("Tilt compensated Heading: %0.2f deg\r\n", LSM303_GetHeadingDegreesTiltCompensated(&lsm303dlhc_data_mag, &lsm303dlhc_data_acc));
+      
 		} else {
 			/* handle error */
 		}
@@ -166,7 +169,7 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
       //        qmc_sensor.avg_compass_whole,
       //        qmc_sensor.avg_compass_decimal);
       // printf("TEMP: %d \r\n",QMC5883_ReadTemp(&qmc_sensor));
-    HAL_Delay(50);
+    HAL_Delay(200);
 
     /* USER CODE END WHILE */
 

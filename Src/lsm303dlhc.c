@@ -21,6 +21,9 @@ static bool lsm303dlhc_mag_auto_range = false;
 static float lsm303dlhc_acc_mg_lsb = 0.001f;   // 1, 2, 4 or 12 mg per lsb
 static float lsm303dlhc_mag_gauss_lsb_xy = 1100.0f;  // Varies with gain
 static float lsm303dlhc_mag_gauss_lsb_z = 980.0f;   // Varies with gain
+static LSM303_MagCalibration_Typedef mag_cal = {0, 0, 0, 1.0f, 1.0f, 1.0f};
+
+
 
 /* private functions */
 static lsm303dlhc_result_t lsm303dlhc_read_i2c(uint8_t address, uint8_t reg, uint8_t *data);
@@ -303,11 +306,52 @@ void lsm303dlhc_convert_mag(lsm303dlhc_data_t *conv, const lsm303dlhc_data_raw_t
     conv->z = ((float) raw->z / lsm303dlhc_mag_gauss_lsb_z) * LSM303DLHC_MAG_SENSORS_GAUSS_TO_MICROTESLA;
 }
 
+void LSM303_CalibrateMagneto(){
+    lsm303dlhc_data_raw_t mag_min = { .x = INT16_MAX, .y = INT16_MAX, .z = INT16_MAX };
+    lsm303dlhc_data_raw_t mag_max = { .x = INT16_MIN, .y = INT16_MIN, .z = INT16_MIN };
+    lsm303dlhc_data_raw_t mag_current;
+
+    int16_t offset_x, offset_y, offset_z;
+
+    uint32_t start_time = HAL_GetTick();
+    while(HAL_GetTick() - start_time < 20000){
+        lsm303dlhc_read_mag_raw(&mag_current);
+        mag_max.x = mag_max.x < mag_current.x ? mag_current.x: mag_max.x;
+        mag_max.y = mag_max.y < mag_current.y ? mag_current.y: mag_max.y;
+        mag_max.z = mag_max.z < mag_current.z ? mag_current.z: mag_max.z;
+
+        mag_min.x = mag_min.x > mag_current.x ? mag_current.x: mag_min.x;
+        mag_min.y = mag_min.y > mag_current.y ? mag_current.y: mag_min.y;
+        mag_min.z = mag_min.z > mag_current.z ? mag_current.z: mag_min.z;
+
+        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+        HAL_Delay(50);
+    }
+    // Hard iron correction (offset)
+    mag_cal.x_offset = (mag_max.x + mag_min.x) / 2;
+    mag_cal.y_offset = ( mag_max.y + mag_min.y) / 2;
+    mag_cal.z_offset = (mag_max.z + mag_min.z) / 2;
+    
+    // Soft iron correction (scale)
+    float x_range = (mag_max.x - mag_min.x) / 2.0f;
+    float y_range = ( mag_max.y - mag_min.y) / 2.0f;
+    float z_range = (mag_max.z - mag_min.z) / 2.0f;
+    float avg_range = (x_range + y_range + z_range) / 3.0f;
+    
+    mag_cal.x_scale = avg_range / x_range;
+    mag_cal.y_scale = avg_range / y_range;
+    mag_cal.z_scale = avg_range / z_range;
+}
+
+void LSM303_ApplyMagCalibration(lsm303dlhc_data_raw_t *raw, lsm303dlhc_data_raw_t *calibrated){
+    calibrated->x = (int16_t)((raw->x - mag_cal.x_offset) * mag_cal.x_scale);
+    calibrated->y = (int16_t)((raw->y - mag_cal.y_offset) * mag_cal.y_scale);
+    calibrated->z = (int16_t)((raw->z - mag_cal.z_offset) * mag_cal.z_scale);
+}
 
 float LSM303_GetHeadingDegrees(lsm303dlhc_data_raw_t *magData)
 {
     float heading = 0.0f;
-
 
     heading = atan2f((float)magData->y, (float)magData->x) * 180.00/M_PI;
 

@@ -177,6 +177,17 @@ typedef struct {
     bool auto_range;
 } lsm303dlhc_mag_init_t;
 
+
+typedef struct {
+    int16_t x_offset;
+    int16_t y_offset;
+    int16_t z_offset;
+    float x_scale;
+    float y_scale;
+    float z_scale;
+} LSM303_MagCalibration_Typedef;
+
+
 lsm303dlhc_result_t lsm303dlhc_init_acc(I2C_HandleTypeDef *i2c, const lsm303dlhc_acc_init_t *init);
 lsm303dlhc_result_t lsm303dlhc_set_acc_scale(uint8_t ctrl_reg4_a);
 lsm303dlhc_result_t lsm303dlhc_read_acc_raw(lsm303dlhc_data_raw_t *data);
@@ -187,6 +198,11 @@ lsm303dlhc_result_t lsm303dlhc_set_mag_gain(lsm303dlhc_mag_gain_t gain);
 lsm303dlhc_result_t lsm303dlhc_set_mag_rate(lsm303dlhc_mag_rate_t rate);
 lsm303dlhc_result_t lsm303dlhc_read_mag_raw(lsm303dlhc_data_raw_t *data);
 void lsm303dlhc_convert_mag(lsm303dlhc_data_t *conv, const lsm303dlhc_data_raw_t *raw);
+
+void LSM303_CalibrateMagneto();
+
+void LSM303_ApplyMagCalibration(lsm303dlhc_data_raw_t *raw,
+                                lsm303dlhc_data_raw_t *calibrated);
 
 float LSM303_GetHeadingDegrees(lsm303dlhc_data_raw_t *magData);
 
