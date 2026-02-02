@@ -63,7 +63,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-QMC_Handle_Typedef	qmc_sensor;
+QMC_Handle_t	qmc_sensor;
 
 extern I2C_HandleTypeDef hi2c1;
 LSM303_RawData_t accData_raw = { 0 };
@@ -151,15 +151,19 @@ LSM303_AccInit_t lsm303dlhc_acc_init = { 0 };
   printf("Accelerometer Calibration done\r\nCalibrating magnetometer arount Z axis\r\n");
   LSM303_2DMagCalibration(20);
   LSM303_MagCalibration_t mag_cal;
-
+  LSM303_AccCalibration_t acc_cal;
+  LSM303_GetCalibrationData(&acc_cal, &mag_cal);
+  printf("Mag Cal Data:\r\n");
+  printf("X Offset: %d, Y Offset: %d, Z Offset: %d\r\n", mag_cal.x_offset, mag_cal.y_offset, mag_cal.z_offset);
+  printf("X Scale: %.3f, Y Scale: %.3f, Z Scale: %.3f\r\n", mag_cal.x_scale, mag_cal.y_scale, mag_cal.z_scale);
+  printf("Acc Cal Data:\r\n");
+  printf("X Bias: %d, Y Bias: %d, Z Bias: %d\r\n", acc_cal.x_bias, acc_cal.y_bias, acc_cal.z_bias);
   printf("Continuos magnetometer calibration mode\r\n");
   while (1)
   {
 
     if (LSM303_ReadAccRaw(&accData_raw) == LSM303DLHC_OK) {
-      printf("ACC Raw X: %d, Y: %d, Z: %d\r\n", accData_raw.x, accData_raw.y, accData_raw.z);
       LSM303_ApplyAccCalibration(&accData_raw, &accData_cal);
-      printf("ACC Calibrated X: %d, Y: %d, Z: %d\r\n", accData_cal.x, accData_cal.y, accData_cal.z);
 			LSM303_ConvertAcc(&accData_grav, &accData_cal);
       printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", accData_grav.x, accData_grav.y, accData_grav.z);
       //printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", accData_grav.x, accData_grav.y, accData_grav.z);

@@ -101,7 +101,7 @@ Src/assert_handler.c \
 Src/fonts.c \
 Src/gpio.c \
 Src/i2c.c \
-Src/lsm303dlhc.c \
+Src/lsm303.c \
 Src/main.c \
 Src/mcutils.c \
 Src/motor.c \

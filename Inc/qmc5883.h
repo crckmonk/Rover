@@ -81,16 +81,16 @@ typedef struct
 	float 		      avg_compass;
 	int32_t			  avg_compass_whole;
 	uint32_t		  avg_compass_decimal;
-}QMC_Handle_Typedef;
+}QMC_Handle_t;
 
 
-uint8_t QMC5883_Init(QMC_Handle_Typedef *qmc, I2C_HandleTypeDef *i2c, QMC_DataRate data_rate);
-uint8_t QMC5883_ReadAverage(QMC_Handle_Typedef *qmc, uint32_t maxAvrage, uint32_t timePerAvg);
-uint16_t QMC5883_ReadTemp(QMC_Handle_Typedef *qmc);
-uint8_t QMC5883_Read(QMC_Handle_Typedef *qmc);
-float   QMC5883_ReadHeading(QMC_Handle_Typedef *qmc);
-uint8_t QMC5883_Standby(QMC_Handle_Typedef *qmc);
-uint8_t QMC5883_Reset(QMC_Handle_Typedef *qmc);
+uint8_t QMC5883_Init(QMC_Handle_t *qmc, I2C_HandleTypeDef *i2c, QMC_DataRate data_rate);
+uint8_t QMC5883_ReadAverage(QMC_Handle_t *qmc, uint32_t maxAvrage, uint32_t timePerAvg);
+uint16_t QMC5883_ReadTemp(QMC_Handle_t *qmc);
+uint8_t QMC5883_Read(QMC_Handle_t *qmc);
+float   QMC5883_ReadHeading(QMC_Handle_t *qmc);
+uint8_t QMC5883_Standby(QMC_Handle_t *qmc);
+uint8_t QMC5883_Reset(QMC_Handle_t *qmc);
 
 
 
