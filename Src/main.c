@@ -66,15 +66,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 QMC_HandleTypedef	qmc_sensor;
 
 extern I2C_HandleTypeDef hi2c1;
-lsm303dlhc_data_raw_t lsm303dlhc_data_acc = { 0 };
-lsm303dlhc_data_raw_t lsm303dlhc_data_mag = { 0 };
+lsm303dlhc_data_raw_t accData_raw = { 0 };
+lsm303dlhc_data_raw_t magData_raw = { 0 };
 
-lsm303dlhc_data_t lsm303dlhc_data_acc_conv = { 0 };
+lsm303dlhc_data_t accData_grav = { 0 };
 lsm303dlhc_data_t lsm303dlhc_data_mag_conv = { 0 };
 
 lsm303dlhc_data_raw_t mag_horizontal = {0};
-lsm303dlhc_data_raw_t mag_calibrated = {0};
-lsm303dlhc_data_raw_t acc_calibrated = {0};
+lsm303dlhc_data_raw_t magData_cal = {0};
+lsm303dlhc_data_raw_t accData_cal = {0};
 float heading = 0.0f;
 /* USER CODE END 0 */
 
@@ -153,24 +153,23 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
   while (1)
   {
 
-    if (lsm303dlhc_read_acc_raw(&lsm303dlhc_data_acc) == LSM303DLHC_OK) {
-      printf("ACC Raw X: %d, Y: %d, Z: %d\r\n", lsm303dlhc_data_acc.x, lsm303dlhc_data_acc.y, lsm303dlhc_data_acc.z);
-      LSM303_ApplyAccCalibration(&lsm303dlhc_data_acc, &acc_calibrated);
-      printf("ACC Calibrated X: %d, Y: %d, Z: %d\r\n", acc_calibrated.x, acc_calibrated.y, acc_calibrated.z);
-			lsm303dlhc_convert_acc(&lsm303dlhc_data_acc_conv, &acc_calibrated);
-      printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", lsm303dlhc_data_acc_conv.x, lsm303dlhc_data_acc_conv.y, lsm303dlhc_data_acc_conv.z);
-      //printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", lsm303dlhc_data_acc_conv.x, lsm303dlhc_data_acc_conv.y, lsm303dlhc_data_acc_conv.z);
+    if (lsm303dlhc_read_acc_raw(&accData_raw) == LSM303DLHC_OK) {
+      printf("ACC Raw X: %d, Y: %d, Z: %d\r\n", accData_raw.x, accData_raw.y, accData_raw.z);
+      LSM303_ApplyAccCalibration(&accData_raw, &accData_cal);
+      printf("ACC Calibrated X: %d, Y: %d, Z: %d\r\n", accData_cal.x, accData_cal.y, accData_cal.z);
+			lsm303dlhc_convert_acc(&accData_grav, &accData_cal);
+      printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", accData_grav.x, accData_grav.y, accData_grav.z);
+      //printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", accData_grav.x, accData_grav.y, accData_grav.z);
 		} else {
 			/* handle error */
 		}
 		
-		if (lsm303dlhc_read_mag_raw(&lsm303dlhc_data_mag) == LSM303DLHC_OK) {
-      LSM303_MagCalibrationUpdateRange(&lsm303dlhc_data_mag);
+		if (lsm303dlhc_read_mag_raw(&magData_raw) == LSM303DLHC_OK) {
+      LSM303_MagCalibrationUpdateRange(&magData_raw);
       LSM303_MagCalibrationCompute();
-      LSM303_ApplyTiltCompensation(&lsm303dlhc_data_mag, &mag_horizontal, &lsm303dlhc_data_acc);
-      LSM303_ApplyMagCalibration(&mag_horizontal, &mag_calibrated);
-      heading = LSM303_GetHeadingDegrees(&mag_calibrated);
-      printf("Calibrated & Tilt compensated Heading: %0.2f deg\r\n", heading);
+      LSM303_ApplyMagCalibration(&magData_raw, &magData_cal);
+      heading = LSM303_GetHeadingDegrees(&magData_cal);
+      printf("Calibrated heading: %0.2f deg\r\n", heading);
       
 		} else {
 			/* handle error */
