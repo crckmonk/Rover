@@ -39,7 +39,7 @@
 #include <math.h>
 //#include "mcutils.h"
 
-uint8_t QMC5883_Init(QMC_HandleTypedef *qmc, I2C_HandleTypeDef *i2c, QMC_DataRate_t data_rate)
+uint8_t QMC5883_Init(QMC_Handle_Typedef *qmc, I2C_HandleTypeDef *i2c, QMC_DataRate data_rate)
 {
 	uint8_t array[2];
 	qmc->i2c = i2c;
@@ -55,14 +55,14 @@ uint8_t QMC5883_Init(QMC_HandleTypedef *qmc, I2C_HandleTypeDef *i2c, QMC_DataRat
 }
 
 
-uint16_t QMC5883_ReadTemp(QMC_HandleTypedef *qmc){
+uint16_t QMC5883_ReadTemp(QMC_Handle_Typedef *qmc){
 	uint8_t temp_low, temp_high;
 	HAL_I2C_Mem_Read(qmc->i2c, QMC_I2C_Address, 0x07, 1, &temp_low,1,100);
 	HAL_I2C_Mem_Read(qmc->i2c, QMC_I2C_Address, 0x08, 1, &temp_high,1,100);
 	return (((uint16_t)temp_high << 8 | temp_low) - QMC5883_TEMP_OFFSET);
 }
 
-uint8_t QMC5883_Read(QMC_HandleTypedef *qmc)
+uint8_t QMC5883_Read(QMC_Handle_Typedef *qmc)
 {
 	qmc->data[0] = 0; 	//clear data index 0
 	HAL_I2C_Mem_Read(qmc->i2c, QMC_I2C_Address, 0x06, 1, qmc->data, 1, 100);
@@ -94,7 +94,7 @@ uint8_t QMC5883_Read(QMC_HandleTypedef *qmc)
 
 
 
-uint8_t QMC5883_ReadAverage(QMC_HandleTypedef *qmc, uint32_t maxAvrage, uint32_t timePerAvg)
+uint8_t QMC5883_ReadAverage(QMC_Handle_Typedef *qmc, uint32_t maxAvrage, uint32_t timePerAvg)
 {
 	int i;
 	float avg = 0.00f;
@@ -122,14 +122,14 @@ uint8_t QMC5883_ReadAverage(QMC_HandleTypedef *qmc, uint32_t maxAvrage, uint32_t
 }
 
 
-float   QMC5883_ReadHeading(QMC_HandleTypedef *qmc)
+float   QMC5883_ReadHeading(QMC_Handle_Typedef *qmc)
 {
 	QMC5883_Read(qmc);
 	return qmc->heading;
 }
 
 
-uint8_t QMC5883_Standby(QMC_HandleTypedef *qmc)
+uint8_t QMC5883_Standby(QMC_Handle_Typedef *qmc)
 {
 	uint8_t array[1] = {0};
 	if(HAL_I2C_Mem_Read(qmc->i2c, QMC_I2C_Address, 0x09, 1, &array[0], 1, 100) != HAL_OK)return QMC_ERR;
@@ -137,7 +137,7 @@ uint8_t QMC5883_Standby(QMC_HandleTypedef *qmc)
 }
 
 
-uint8_t QMC5883_Reset(QMC_HandleTypedef *qmc)
+uint8_t QMC5883_Reset(QMC_Handle_Typedef *qmc)
 {
 	uint8_t array[1]= {0};
 	if(HAL_I2C_Mem_Read(qmc->i2c, QMC_I2C_Address, 0x0A, 1, &array[0], 1, 100) != HAL_OK)return QMC_ERR;

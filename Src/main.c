@@ -63,7 +63,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-QMC_HandleTypedef	qmc_sensor;
+QMC_Handle_Typedef	qmc_sensor;
 
 extern I2C_HandleTypeDef hi2c1;
 lsm303dlhc_data_raw_t accData_raw = { 0 };

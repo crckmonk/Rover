@@ -1,13 +1,14 @@
-#include "lsm303dlhc.h"
+#include "lsm303.h"
 
 #include <math.h>
 
 /*
     TODO: 
         - Refactor to fit code style
-        - implement oversampling
+        - implement oversampling/Filtering
+        - Use DMA 
         - implement temperature reading
-        - Calibration
+        - Calibration - DONE
 
 */
 
@@ -328,8 +329,6 @@ void LSM303_CalibrateMagneto(){
     lsm303dlhc_data_raw_t mag_min = { .x = INT16_MAX, .y = INT16_MAX, .z = INT16_MAX };
     lsm303dlhc_data_raw_t mag_max = { .x = INT16_MIN, .y = INT16_MIN, .z = INT16_MIN };
     lsm303dlhc_data_raw_t mag_current;
-
-    int16_t offset_x, offset_y, offset_z;
 
     uint32_t start_time = HAL_GetTick();
     while(HAL_GetTick() - start_time < 20000){
