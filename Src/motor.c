@@ -1,6 +1,6 @@
 #include "motor.h"
 
-void Motor_Init(TIM_HandleTypeDef *htim)
+void motor_Init(TIM_HandleTypeDef *htim)
 {
     HAL_TIM_PWM_Start(htim, LEFT_FORWARD);
     HAL_TIM_PWM_Start(htim, LEFT_REVERSE);
@@ -12,7 +12,7 @@ void Motor_Init(TIM_HandleTypeDef *htim)
   __HAL_TIM_SET_COMPARE(htim, RIGHT_REVERSE, 0);  
 }
 
-void Set_Motor_Speed(TIM_HandleTypeDef *htim,  side_e side, direction dir, uint8_t speed)
+void motor_SetSpeed(TIM_HandleTypeDef *htim,  side_e side, direction dir, uint8_t speed)
 {
   if (side == LEFT || side == BOTH){
     switch(dir){
@@ -44,19 +44,19 @@ void Set_Motor_Speed(TIM_HandleTypeDef *htim,  side_e side, direction dir, uint8
   }
 }
 
-void Motor_full_stop(TIM_HandleTypeDef *htim){
-  Set_Motor_Speed(htim, BOTH, BRAKE, STOP);
+void motor_FullStop(TIM_HandleTypeDef *htim){
+  motor_SetSpeed(htim, BOTH, BRAKE, STOP);
 }
 
 void Test_Speed_Settings(TIM_HandleTypeDef *htim, direction dir){
-    Set_Motor_Speed(htim, BOTH, dir , DEAD_SLOW);
+    motor_SetSpeed(htim, BOTH, dir , DEAD_SLOW);
   HAL_Delay(1000);
-  Set_Motor_Speed(htim, BOTH, dir, SLOW);
+  motor_SetSpeed(htim, BOTH, dir, SLOW);
   HAL_Delay(1000);
-  Set_Motor_Speed(htim, BOTH, dir, HALF);
+  motor_SetSpeed(htim, BOTH, dir, HALF);
   HAL_Delay(1000);
-  Set_Motor_Speed(htim, BOTH, dir, FULL);
+  motor_SetSpeed(htim, BOTH, dir, FULL);
   HAL_Delay(1000);
-  Set_Motor_Speed(htim, BOTH, dir, STOP);
+  motor_SetSpeed(htim, BOTH, dir, STOP);
   HAL_Delay(1000);
 }

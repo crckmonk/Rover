@@ -66,15 +66,15 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 QMC_Handle_Typedef	qmc_sensor;
 
 extern I2C_HandleTypeDef hi2c1;
-lsm303dlhc_data_raw_t accData_raw = { 0 };
-lsm303dlhc_data_raw_t magData_raw = { 0 };
+LSM303_RawData_t accData_raw = { 0 };
+LSM303_RawData_t magData_raw = { 0 };
 
-lsm303dlhc_data_t accData_grav = { 0 };
-lsm303dlhc_data_t lsm303dlhc_data_mag_conv = { 0 };
+LSM303_Data_t accData_grav = { 0 };
+LSM303_Data_t lsm303dlhc_data_mag_conv = { 0 };
 
-lsm303dlhc_data_raw_t mag_horizontal = {0};
-lsm303dlhc_data_raw_t magData_cal = {0};
-lsm303dlhc_data_raw_t accData_cal = {0};
+LSM303_RawData_t mag_horizontal = {0};
+LSM303_RawData_t magData_cal = {0};
+LSM303_RawData_t accData_cal = {0};
 float heading = 0.0f;
 /* USER CODE END 0 */
 
@@ -112,8 +112,8 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
-	lsm303dlhc_mag_init_t lsm303dlhc_mag_init = { 0 };
+LSM303_AccInit_t lsm303dlhc_acc_init = { 0 };
+	LSM303_MagInit_t lsm303dlhc_mag_init = { 0 };
 	
 	lsm303dlhc_acc_init.ctrl_reg1_a = LSM303DLHC_ACR1A_XEN | LSM303DLHC_ACR1A_YEN | LSM303DLHC_ACR1A_ZEN | LSM303DLHC_ACR1A_ODR30_100_HZ;
 	lsm303dlhc_acc_init.ctrl_reg4_a = LSM303DLHC_ACR4A_FS10_1MG;
@@ -124,11 +124,11 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
 	lsm303dlhc_mag_init.auto_range = false;
 
 
-  if (lsm303dlhc_init_acc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
+  if (LSM303_InitAcc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
     printf("LSM303DLHC Accel Init Error\r\n");
     }
 
-	if (lsm303dlhc_init_mag(&hi2c1, &lsm303dlhc_mag_init) != LSM303DLHC_OK) {
+	if (LSM303_InitMag(&hi2c1, &lsm303dlhc_mag_init) != LSM303DLHC_OK) {
 		printf("LSM303DLHC Mag Init Error\r\n");
 	}
   // if(  QMC5883_Init(&qmc_sensor, &hi2c1, qmc_continus) == QMC_OK )
@@ -145,26 +145,29 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
   /* USER CODE BEGIN WHILE */
   printf("START\r\n");
 
- // LSM303_CalibrateMagneto();
+ // LSM303_2DMagCalibration();
  // printf("Magnetometer Calibration done\r\n");
-  LSM303_CalibrateAccelerometer();
-  printf("Accelerometer Calibration done\r\n");
+  LSM303_CalibrateAccelerometer(200);
+  printf("Accelerometer Calibration done\r\nCalibrating magnetometer arount Z axis\r\n");
+  LSM303_2DMagCalibration(20);
+  LSM303_MagCalibration_t mag_cal;
+
   printf("Continuos magnetometer calibration mode\r\n");
   while (1)
   {
 
-    if (lsm303dlhc_read_acc_raw(&accData_raw) == LSM303DLHC_OK) {
+    if (LSM303_ReadAccRaw(&accData_raw) == LSM303DLHC_OK) {
       printf("ACC Raw X: %d, Y: %d, Z: %d\r\n", accData_raw.x, accData_raw.y, accData_raw.z);
       LSM303_ApplyAccCalibration(&accData_raw, &accData_cal);
       printf("ACC Calibrated X: %d, Y: %d, Z: %d\r\n", accData_cal.x, accData_cal.y, accData_cal.z);
-			lsm303dlhc_convert_acc(&accData_grav, &accData_cal);
+			LSM303_ConvertAcc(&accData_grav, &accData_cal);
       printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", accData_grav.x, accData_grav.y, accData_grav.z);
       //printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", accData_grav.x, accData_grav.y, accData_grav.z);
 		} else {
 			/* handle error */
 		}
 		
-		if (lsm303dlhc_read_mag_raw(&magData_raw) == LSM303DLHC_OK) {
+		if (LSM303_ReadMagRaw(&magData_raw) == LSM303DLHC_OK) {
       LSM303_MagCalibrationUpdateRange(&magData_raw);
       LSM303_MagCalibrationCompute();
       LSM303_ApplyMagCalibration(&magData_raw, &magData_cal);

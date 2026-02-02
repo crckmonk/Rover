@@ -17,20 +17,20 @@
 
 /* private variables */
 static I2C_HandleTypeDef *lsm303dlhc_i2c = NULL;
-static lsm303dlhc_mag_gain_t lsm303dlhc_mag_magin = LSM303DLHC_MAGGAIN_1_3;
+static LSM303_MagGain_t lsm303dlhc_mag_magin = LSM303DLHC_MAGGAIN_1_3;
 static bool lsm303dlhc_mag_auto_range = false;
 static float lsm303dlhc_acc_mg_lsb = 0.001f;   // 1, 2, 4 or 12 mg per lsb
 static float lsm303dlhc_mag_gauss_lsb_xy = 1100.0f;  // Varies with gain
 static float lsm303dlhc_mag_gauss_lsb_z = 980.0f;   // Varies with gain
-static LSM303_MagCalibration_Typedef mag_cal = {0, 0, 0, 1.0f, 1.0f, 1.0f};
-static LSM303_AccCalibration_Typedef acc_cal = {0, 0, 0};
+static LSM303_MagCalibration_t mag_cal = {0, 0, 0, 1.0f, 1.0f, 1.0f};
+static LSM303_AccCalibration_t acc_cal = {0, 0, 0};
 
 
 /* private functions */
-static lsm303dlhc_result_t lsm303dlhc_read_i2c(uint8_t address, uint8_t reg, uint8_t *data);
-static lsm303dlhc_result_t lsm303dlhc_write_i2c(uint8_t address, uint8_t reg, uint8_t data);
+static LSM303_Result_t lsm303dlhc_read_i2c(uint8_t address, uint8_t reg, uint8_t *data);
+static LSM303_Result_t lsm303dlhc_write_i2c(uint8_t address, uint8_t reg, uint8_t data);
 
-lsm303dlhc_result_t lsm303dlhc_init_acc(I2C_HandleTypeDef *i2c, const lsm303dlhc_acc_init_t *init) {
+LSM303_Result_t LSM303_InitAcc(I2C_HandleTypeDef *i2c, const LSM303_AccInit_t *init) {
     uint8_t reg1_a;
     lsm303dlhc_i2c = i2c;
 
@@ -51,7 +51,7 @@ lsm303dlhc_result_t lsm303dlhc_init_acc(I2C_HandleTypeDef *i2c, const lsm303dlhc
         return LSM303DLHC_ERROR;
     }
 
-    if (lsm303dlhc_set_acc_scale(init->ctrl_reg4_a) != LSM303DLHC_OK) {
+    if (LSM303_SetAccScale(init->ctrl_reg4_a) != LSM303DLHC_OK) {
         return LSM303DLHC_ERROR;
     }
 
@@ -74,7 +74,7 @@ lsm303dlhc_result_t lsm303dlhc_init_acc(I2C_HandleTypeDef *i2c, const lsm303dlhc
     return LSM303DLHC_OK;
 }
 
-lsm303dlhc_result_t lsm303dlhc_set_acc_scale(uint8_t ctrl_reg4_a) {
+LSM303_Result_t LSM303_SetAccScale(uint8_t ctrl_reg4_a) {
     if (lsm303dlhc_write_i2c(LSM303DLHC_ADDR_ACC, LSM303DLHC_REG_ACC_CTRL_REG4_A, ctrl_reg4_a) != LSM303DLHC_OK) {
         return LSM303DLHC_ERROR;
     }
@@ -92,7 +92,7 @@ lsm303dlhc_result_t lsm303dlhc_set_acc_scale(uint8_t ctrl_reg4_a) {
     return LSM303DLHC_OK;
 }
 
-lsm303dlhc_result_t lsm303dlhc_read_acc_raw(lsm303dlhc_data_raw_t *data) {
+LSM303_Result_t LSM303_ReadAccRaw(LSM303_RawData_t *data) {
     uint8_t reg = LSM303DLHC_REG_ACC_OUT_X_L_A | 0x80;
     uint8_t buf[6] = { 0 };
 
@@ -112,13 +112,13 @@ lsm303dlhc_result_t lsm303dlhc_read_acc_raw(lsm303dlhc_data_raw_t *data) {
     return LSM303DLHC_OK;
 }
 
-void lsm303dlhc_convert_acc(lsm303dlhc_data_t *conv, const lsm303dlhc_data_raw_t *raw) {
+void LSM303_ConvertAcc(LSM303_Data_t *conv, const LSM303_RawData_t *raw) {
     conv->x = (float) raw->x * lsm303dlhc_acc_mg_lsb * LSM303DLHC_ACC_SENSORS_GRAVITY_STANDARD;
     conv->y = (float) raw->y * lsm303dlhc_acc_mg_lsb * LSM303DLHC_ACC_SENSORS_GRAVITY_STANDARD;
     conv->z = (float) raw->z * lsm303dlhc_acc_mg_lsb * LSM303DLHC_ACC_SENSORS_GRAVITY_STANDARD;
 }
 
-lsm303dlhc_result_t lsm303dlhc_init_mag(I2C_HandleTypeDef *i2c, const lsm303dlhc_mag_init_t *init) {
+LSM303_Result_t LSM303_InitMag(I2C_HandleTypeDef *i2c, const LSM303_MagInit_t *init) {
     uint8_t cra_reg_m;
     lsm303dlhc_i2c = i2c;
     lsm303dlhc_mag_auto_range = init->auto_range;
@@ -131,11 +131,11 @@ lsm303dlhc_result_t lsm303dlhc_init_mag(I2C_HandleTypeDef *i2c, const lsm303dlhc
         return LSM303DLHC_ERROR;
     }
 
-    if (lsm303dlhc_set_mag_rate(init->rate) != LSM303DLHC_OK) {
+    if (LSM303_SetMagRate(init->rate) != LSM303DLHC_OK) {
         return LSM303DLHC_ERROR;
     }
 
-    if (lsm303dlhc_set_mag_gain(init->gain) != LSM303DLHC_OK) {
+    if (LSM303_SetMagGain(init->gain) != LSM303DLHC_OK) {
         return LSM303DLHC_ERROR;
     }
 
@@ -151,7 +151,7 @@ lsm303dlhc_result_t lsm303dlhc_init_mag(I2C_HandleTypeDef *i2c, const lsm303dlhc
     return LSM303DLHC_OK;
 }
 
-lsm303dlhc_result_t lsm303dlhc_set_mag_rate(lsm303dlhc_mag_rate_t rate) {
+LSM303_Result_t LSM303_SetMagRate(LSM303_MagRate_t rate) {
     uint8_t reg_m = ((uint8_t) rate & 0x07) << 2;
 
     if (lsm303dlhc_write_i2c(LSM303DLHC_ADDR_MAG, LSM303DLHC_REG_MAG_CRA_REG_M, reg_m) != LSM303DLHC_OK) {
@@ -161,7 +161,7 @@ lsm303dlhc_result_t lsm303dlhc_set_mag_rate(lsm303dlhc_mag_rate_t rate) {
     }
 }
 
-lsm303dlhc_result_t lsm303dlhc_set_mag_gain(lsm303dlhc_mag_gain_t gain) {
+LSM303_Result_t LSM303_SetMagGain(LSM303_MagGain_t gain) {
     if (lsm303dlhc_write_i2c(LSM303DLHC_ADDR_MAG, LSM303DLHC_REG_MAG_CRB_REG_M, (uint8_t) gain) != LSM303DLHC_OK) {
         return LSM303DLHC_ERROR;
     }
@@ -202,7 +202,7 @@ lsm303dlhc_result_t lsm303dlhc_set_mag_gain(lsm303dlhc_mag_gain_t gain) {
     return LSM303DLHC_OK;
 }
 
-lsm303dlhc_result_t lsm303dlhc_read_mag_raw(lsm303dlhc_data_raw_t *data) {
+LSM303_Result_t LSM303_ReadMagRaw(LSM303_RawData_t *data) {
     bool reading_valid = false;
     uint8_t reg_mg = 0;
     uint8_t reg_mag_out = LSM303DLHC_REG_MAG_OUT_X_H_M;
@@ -239,7 +239,7 @@ lsm303dlhc_result_t lsm303dlhc_read_mag_raw(lsm303dlhc_data_raw_t *data) {
                 /* saturating .... increase the range if we can */
                 switch (lsm303dlhc_mag_magin) {
                 case LSM303DLHC_MAGGAIN_5_6:
-                    if (lsm303dlhc_set_mag_gain(LSM303DLHC_MAGGAIN_8_1) != LSM303DLHC_OK) {
+                    if (LSM303_SetMagGain(LSM303DLHC_MAGGAIN_8_1) != LSM303DLHC_OK) {
                         return LSM303DLHC_ERROR;
                     } else {
                         reading_valid = false;
@@ -247,7 +247,7 @@ lsm303dlhc_result_t lsm303dlhc_read_mag_raw(lsm303dlhc_data_raw_t *data) {
                     break;
 
                 case LSM303DLHC_MAGGAIN_4_7:
-                    if (lsm303dlhc_set_mag_gain(LSM303DLHC_MAGGAIN_5_6) != LSM303DLHC_OK) {
+                    if (LSM303_SetMagGain(LSM303DLHC_MAGGAIN_5_6) != LSM303DLHC_OK) {
                         return LSM303DLHC_ERROR;
                     } else {
                         reading_valid = false;
@@ -255,7 +255,7 @@ lsm303dlhc_result_t lsm303dlhc_read_mag_raw(lsm303dlhc_data_raw_t *data) {
                     break;
 
                 case LSM303DLHC_MAGGAIN_4_0:
-                    if (lsm303dlhc_set_mag_gain(LSM303DLHC_MAGGAIN_4_7) != LSM303DLHC_OK) {
+                    if (LSM303_SetMagGain(LSM303DLHC_MAGGAIN_4_7) != LSM303DLHC_OK) {
                         return LSM303DLHC_ERROR;
                     } else {
                         reading_valid = false;
@@ -263,7 +263,7 @@ lsm303dlhc_result_t lsm303dlhc_read_mag_raw(lsm303dlhc_data_raw_t *data) {
                     break;
 
                 case LSM303DLHC_MAGGAIN_2_5:
-                    if (lsm303dlhc_set_mag_gain(LSM303DLHC_MAGGAIN_4_0) != LSM303DLHC_OK) {
+                    if (LSM303_SetMagGain(LSM303DLHC_MAGGAIN_4_0) != LSM303DLHC_OK) {
                         return LSM303DLHC_ERROR;
                     } else {
                         reading_valid = false;
@@ -271,7 +271,7 @@ lsm303dlhc_result_t lsm303dlhc_read_mag_raw(lsm303dlhc_data_raw_t *data) {
                     break;
 
                 case LSM303DLHC_MAGGAIN_1_9:
-                    if (lsm303dlhc_set_mag_gain(LSM303DLHC_MAGGAIN_2_5) != LSM303DLHC_OK) {
+                    if (LSM303_SetMagGain(LSM303DLHC_MAGGAIN_2_5) != LSM303DLHC_OK) {
                         return LSM303DLHC_ERROR;
                     } else {
                         reading_valid = false;
@@ -279,7 +279,7 @@ lsm303dlhc_result_t lsm303dlhc_read_mag_raw(lsm303dlhc_data_raw_t *data) {
                     break;
 
                 case LSM303DLHC_MAGGAIN_1_3:
-                    if (lsm303dlhc_set_mag_gain(LSM303DLHC_MAGGAIN_1_9) != LSM303DLHC_OK) {
+                    if (LSM303_SetMagGain(LSM303DLHC_MAGGAIN_1_9) != LSM303DLHC_OK) {
                         return LSM303DLHC_ERROR;
                     } else {
                         reading_valid = false;
@@ -301,20 +301,20 @@ lsm303dlhc_result_t lsm303dlhc_read_mag_raw(lsm303dlhc_data_raw_t *data) {
     return LSM303DLHC_OK;
 }
 
-void lsm303dlhc_convert_mag(lsm303dlhc_data_t *conv, const lsm303dlhc_data_raw_t *raw) {
+void LSM303_ConvertMag(LSM303_Data_t *conv, const LSM303_RawData_t *raw) {
     conv->x = ((float) raw->x / lsm303dlhc_mag_gauss_lsb_xy) * LSM303DLHC_MAG_SENSORS_GAUSS_TO_MICROTESLA;
     conv->y = ((float) raw->y / lsm303dlhc_mag_gauss_lsb_xy) * LSM303DLHC_MAG_SENSORS_GAUSS_TO_MICROTESLA;
     conv->z = ((float) raw->z / lsm303dlhc_mag_gauss_lsb_z) * LSM303DLHC_MAG_SENSORS_GAUSS_TO_MICROTESLA;
 }
 
-void LSM303_CalibrateAccelerometer(){
-    uint16_t samples = 500;
-    lsm303dlhc_data_raw_t acc_current;
+void LSM303_CalibrateAccelerometer(uint16_t samples){
+    if (samples == 0) return;
+    LSM303_RawData_t acc_current;
     int32_t acc_x_sum = 0;
     int32_t acc_y_sum = 0;
     int32_t acc_z_sum = 0;
     for(uint16_t i = 0; i < samples; i++){
-        lsm303dlhc_read_acc_raw(&acc_current);
+        LSM303_ReadAccRaw(&acc_current);
         acc_x_sum += acc_current.x;
         acc_y_sum += acc_current.y;
         acc_z_sum += acc_current.z;
@@ -325,39 +325,37 @@ void LSM303_CalibrateAccelerometer(){
     acc_cal.z_bias = (int16_t)(acc_z_sum / samples);
 }
 
-void LSM303_CalibrateMagneto(){
-    lsm303dlhc_data_raw_t mag_min = { .x = INT16_MAX, .y = INT16_MAX, .z = INT16_MAX };
-    lsm303dlhc_data_raw_t mag_max = { .x = INT16_MIN, .y = INT16_MIN, .z = INT16_MIN };
-    lsm303dlhc_data_raw_t mag_current;
+void LSM303_2DMagCalibration(uint8_t seconds){
+    LSM303_RawData_t mag_min = { .x = INT16_MAX, .y = INT16_MAX };
+    LSM303_RawData_t mag_max = { .x = INT16_MIN, .y = INT16_MIN };
+    LSM303_RawData_t mag_current;
 
     uint32_t start_time = HAL_GetTick();
-    while(HAL_GetTick() - start_time < 20000){
-        lsm303dlhc_read_mag_raw(&mag_current);
-        mag_max.x = mag_max.x < mag_current.x ? mag_current.x: mag_max.x;
-        mag_max.y = mag_max.y < mag_current.y ? mag_current.y: mag_max.y;
-        mag_max.z = mag_max.z < mag_current.z ? mag_current.z: mag_max.z;
+    while(HAL_GetTick() - start_time < seconds * 1000){
+        if(LSM303_ReadMagRaw(&mag_current) == LSM303DLHC_OK){
 
-        mag_min.x = mag_min.x > mag_current.x ? mag_current.x: mag_min.x;
-        mag_min.y = mag_min.y > mag_current.y ? mag_current.y: mag_min.y;
-        mag_min.z = mag_min.z > mag_current.z ? mag_current.z: mag_min.z;
+            mag_max.x = mag_max.x < mag_current.x ? mag_current.x: mag_max.x;
+            mag_max.y = mag_max.y < mag_current.y ? mag_current.y: mag_max.y;
 
-        HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+            mag_min.x = mag_min.x > mag_current.x ? mag_current.x: mag_min.x;
+            mag_min.y = mag_min.y > mag_current.y ? mag_current.y: mag_min.y;
+            HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+        }
         HAL_Delay(50);
     }
     // Hard iron correction (offset)
     mag_cal.x_offset = (mag_max.x + mag_min.x) / 2;
     mag_cal.y_offset = ( mag_max.y + mag_min.y) / 2;
-    mag_cal.z_offset = (mag_max.z + mag_min.z) / 2;
+    mag_cal.z_offset = 0;
     
     // Soft iron correction (scale)
     float x_range = (mag_max.x - mag_min.x) / 2.0f;
     float y_range = ( mag_max.y - mag_min.y) / 2.0f;
-    float z_range = (mag_max.z - mag_min.z) / 2.0f;
-    float avg_range = (x_range + y_range + z_range) / 3.0f;
+    float avg_range = (x_range + y_range) / 2.0f;
     
     mag_cal.x_scale = avg_range / x_range;
     mag_cal.y_scale = avg_range / y_range;
-    mag_cal.z_scale = avg_range / z_range;
+    mag_cal.z_scale = 1.0f;
 }
 
 void LSM303_MagCalibrationReset(){
@@ -375,7 +373,7 @@ void LSM303_MagCalibrationReset(){
     mag_cal.z_scale = 1.0f;
 }
 
-void LSM303_MagCalibrationUpdateRange(lsm303dlhc_data_raw_t *raw){
+void LSM303_MagCalibrationUpdateRange(LSM303_RawData_t *raw){
     if(raw->x > mag_cal.x_max) mag_cal.x_max = raw->x;
     if(raw->y > mag_cal.y_max) mag_cal.y_max = raw->y;
     if(raw->z > mag_cal.z_max) mag_cal.z_max = raw->z;
@@ -402,19 +400,19 @@ void LSM303_MagCalibrationCompute(){
     mag_cal.z_scale = avg_range / z_range;
 }
 
-void LSM303_ApplyMagCalibration(lsm303dlhc_data_raw_t *raw, lsm303dlhc_data_raw_t *calibrated){
+void LSM303_ApplyMagCalibration(LSM303_RawData_t *raw, LSM303_RawData_t *calibrated){
     calibrated->x = (int16_t)((raw->x - mag_cal.x_offset) * mag_cal.x_scale);
     calibrated->y = (int16_t)((raw->y - mag_cal.y_offset) * mag_cal.y_scale);
     calibrated->z = (int16_t)((raw->z - mag_cal.z_offset) * mag_cal.z_scale);
 }
 
-void LSM303_ApplyAccCalibration(lsm303dlhc_data_raw_t *raw, lsm303dlhc_data_raw_t *calibrated){
+void LSM303_ApplyAccCalibration(LSM303_RawData_t *raw, LSM303_RawData_t *calibrated){
     calibrated->x = raw->x - acc_cal.x_bias;
     calibrated->y = raw->y - acc_cal.y_bias;
     calibrated->z = raw->z - acc_cal.z_bias;
 }
 
-float LSM303_ApplyTiltCompensation(lsm303dlhc_data_raw_t *magData_raw, lsm303dlhc_data_raw_t *magData_comp,lsm303dlhc_data_raw_t *accData){
+float LSM303_ApplyTiltCompensation(LSM303_RawData_t *magData_raw, LSM303_RawData_t *magData_comp,LSM303_RawData_t *accData){
     
     float roll = atan2f((float)accData->y, (float)accData->z);
     float pitch = atan2f(-(float)accData->x,sqrtf((float)accData->y * (float)accData->y + (float)accData->z * (float)accData->z));
@@ -426,7 +424,7 @@ float LSM303_ApplyTiltCompensation(lsm303dlhc_data_raw_t *magData_raw, lsm303dlh
     magData_comp->z = magData_raw->z;
 }
 
-float LSM303_GetHeadingDegrees(lsm303dlhc_data_raw_t *magData){
+float LSM303_GetHeadingDegrees(LSM303_RawData_t *magData){
     float heading = 0.0f;
 
     heading = (atan2f(magData->y, magData->x) * (180.0f / M_PI)) + DECLINATION_ANGLE;
@@ -442,8 +440,17 @@ float LSM303_GetHeadingDegrees(lsm303dlhc_data_raw_t *magData){
 
 }
 
+void LSM303_GetCalibrationData(LSM303_AccCalibration_t *accCalibration, LSM303_MagCalibration_t *magCalibration){
+    if(accCalibration != NULL){
+        *accCalibration = acc_cal;
+    }
+    if(magCalibration != NULL){
+        *magCalibration = mag_cal;
+    }
+}
+
 /* private functions */
-static lsm303dlhc_result_t lsm303dlhc_read_i2c(uint8_t address, uint8_t reg, uint8_t *data) {
+static LSM303_Result_t lsm303dlhc_read_i2c(uint8_t address, uint8_t reg, uint8_t *data) {
     if (HAL_I2C_Master_Transmit(lsm303dlhc_i2c, address, &reg, 1, 1000) != HAL_OK) {
         return LSM303DLHC_ERROR;
     }
@@ -455,7 +462,7 @@ static lsm303dlhc_result_t lsm303dlhc_read_i2c(uint8_t address, uint8_t reg, uin
     return LSM303DLHC_OK;
 }
 
-static lsm303dlhc_result_t lsm303dlhc_write_i2c(uint8_t address, uint8_t reg, uint8_t data) {
+static LSM303_Result_t lsm303dlhc_write_i2c(uint8_t address, uint8_t reg, uint8_t data) {
     uint8_t buf[2] = { reg, data };
 
     if (HAL_I2C_Master_Transmit(lsm303dlhc_i2c, address, buf, 2, 1000) != HAL_OK) {

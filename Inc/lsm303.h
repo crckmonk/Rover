@@ -110,7 +110,7 @@ typedef enum {
     LSM303DLHC_MAGOP_SINGLE = 0x01, // Single-conversion mode
     LSM303DLHC_MAGOP_SLEEP1 = 0x02, // Sleep-mode. Device is placed in sleep-mode
     LSM303DLHC_MAGOP_SLEEP2 = 0x03  // Sleep-mode. Device is placed in sleep-mode
-} lsm303dlhc_mag_op_t;
+} LSM303_MagMode_t;
 
 /* CRA_REG_M */
 typedef enum {
@@ -122,7 +122,7 @@ typedef enum {
     LSM303DLHC_MAGRATE_30 = 0x05,  // 30 Hz
     LSM303DLHC_MAGRATE_75 = 0x06,  // 75 Hz
     LSM303DLHC_MAGRATE_220 = 0x07   // 200 Hz
-} lsm303dlhc_mag_rate_t;
+} LSM303_MagRate_t;
 
 /* CRB_REG_M */
 typedef enum {
@@ -133,7 +133,7 @@ typedef enum {
     LSM303DLHC_MAGGAIN_4_7 = 0xA0,  // +/- 4.7
     LSM303DLHC_MAGGAIN_5_6 = 0xC0,  // +/- 5.6
     LSM303DLHC_MAGGAIN_8_1 = 0xE0  // +/- 8.1
-} lsm303dlhc_mag_gain_t;
+} LSM303_MagGain_t;
 
 /* high before low (different than accel) */
 #define LSM303DLHC_MAG_XHI   0
@@ -147,19 +147,19 @@ typedef enum {
 
 typedef enum {
     LSM303DLHC_OK, LSM303DLHC_ERROR
-} lsm303dlhc_result_t;
+} LSM303_Result_t;
 
 typedef struct {
     int16_t x;
     int16_t y;
     int16_t z;
-} lsm303dlhc_data_raw_t;
+} LSM303_RawData_t;
 
 typedef struct {
     float x;
     float y;
     float z;
-} lsm303dlhc_data_t;
+} LSM303_Data_t;
 
 typedef struct {
     uint8_t ctrl_reg1_a;
@@ -168,14 +168,14 @@ typedef struct {
     uint8_t ctrl_reg4_a;
     uint8_t ctrl_reg5_a;
     uint8_t ctrl_reg6_a;
-} lsm303dlhc_acc_init_t;
+} LSM303_AccInit_t;
 
 typedef struct {
-    lsm303dlhc_mag_op_t op;
-    lsm303dlhc_mag_rate_t rate;
-    lsm303dlhc_mag_gain_t gain;
+    LSM303_MagMode_t op;
+    LSM303_MagRate_t rate;
+    LSM303_MagGain_t gain;
     bool auto_range;
-} lsm303dlhc_mag_init_t;
+} LSM303_MagInit_t;
 
 
 typedef struct {
@@ -191,7 +191,7 @@ typedef struct {
     float x_scale;
     float y_scale;
     float z_scale;
-} LSM303_MagCalibration_Typedef;
+} LSM303_MagCalibration_t;
 
 
 typedef struct {
@@ -199,39 +199,41 @@ typedef struct {
     int16_t y_bias;
     int16_t z_bias;
 
-} LSM303_AccCalibration_Typedef;
+} LSM303_AccCalibration_t;
 
-lsm303dlhc_result_t lsm303dlhc_init_acc(I2C_HandleTypeDef *i2c, const lsm303dlhc_acc_init_t *init);
-lsm303dlhc_result_t lsm303dlhc_set_acc_scale(uint8_t ctrl_reg4_a);
-lsm303dlhc_result_t lsm303dlhc_read_acc_raw(lsm303dlhc_data_raw_t *data);
-void lsm303dlhc_convert_acc(lsm303dlhc_data_t *conv, const lsm303dlhc_data_raw_t *raw);
+LSM303_Result_t LSM303_InitAcc(I2C_HandleTypeDef *i2c, const LSM303_AccInit_t *init);
+LSM303_Result_t LSM303_SetAccScale(uint8_t ctrl_reg4_a);
+LSM303_Result_t LSM303_ReadAccRaw(LSM303_RawData_t *data);
+void LSM303_ConvertAcc(LSM303_Data_t *conv, const LSM303_RawData_t *raw);
 
-lsm303dlhc_result_t lsm303dlhc_init_mag(I2C_HandleTypeDef *i2c, const lsm303dlhc_mag_init_t *init);
-lsm303dlhc_result_t lsm303dlhc_set_mag_gain(lsm303dlhc_mag_gain_t gain);
-lsm303dlhc_result_t lsm303dlhc_set_mag_rate(lsm303dlhc_mag_rate_t rate);
-lsm303dlhc_result_t lsm303dlhc_read_mag_raw(lsm303dlhc_data_raw_t *data);
-void lsm303dlhc_convert_mag(lsm303dlhc_data_t *conv, const lsm303dlhc_data_raw_t *raw);
+LSM303_Result_t LSM303_InitMag(I2C_HandleTypeDef *i2c, const LSM303_MagInit_t *init);
+LSM303_Result_t LSM303_SetMagGain(LSM303_MagGain_t gain);
+LSM303_Result_t LSM303_SetMagRate(LSM303_MagRate_t rate);
+LSM303_Result_t LSM303_ReadMagRaw(LSM303_RawData_t *data);
+void LSM303_ConvertMag(LSM303_Data_t *conv, const LSM303_RawData_t *raw);
 
-void LSM303_CalibrateAccelerometer();
+void LSM303_CalibrateAccelerometer(uint16_t samples);
 
-void LSM303_CalibrateMagneto();
+void LSM303_2DMagCalibration(uint8_t seconds);
 
-void LSM303_MagCalibrationUpdateRange(lsm303dlhc_data_raw_t *raw);
+void LSM303_MagCalibrationUpdateRange(LSM303_RawData_t *raw);
 
 void LSM303_MagCalibrationCompute();
 
-void LSM303_ApplyMagCalibration(lsm303dlhc_data_raw_t *raw,
-                                lsm303dlhc_data_raw_t *calibrated);
+void LSM303_ApplyMagCalibration(LSM303_RawData_t *raw,
+                                LSM303_RawData_t *calibrated);
 
-void LSM303_ApplyAccCalibration(lsm303dlhc_data_raw_t *raw,
-                                lsm303dlhc_data_raw_t *calibrated);
+void LSM303_ApplyAccCalibration(LSM303_RawData_t *raw,
+                                LSM303_RawData_t *calibrated);
 
-float LSM303_ApplyTiltCompensation(lsm303dlhc_data_raw_t *magData_raw,
-                            lsm303dlhc_data_raw_t *magData_comp,
-                            lsm303dlhc_data_raw_t *accData);
+float LSM303_ApplyTiltCompensation(LSM303_RawData_t *magData_raw,
+                            LSM303_RawData_t *magData_comp,
+                            LSM303_RawData_t *accData);
 
-float LSM303_GetHeadingDegrees(lsm303dlhc_data_raw_t *magData);
+float LSM303_GetHeadingDegrees(LSM303_RawData_t *magData);
 
+void LSM303_GetCalibrationData(LSM303_AccCalibration_t *accCalibration,
+                               LSM303_MagCalibration_t *magCalibration);
 
 /* C++ detection */
 #ifdef __cplusplus

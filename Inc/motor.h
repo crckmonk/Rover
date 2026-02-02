@@ -30,11 +30,11 @@ typedef enum side_e {
 } side_e;
 
 
-void Motor_Init(TIM_HandleTypeDef *htim);
+void motor_Init(TIM_HandleTypeDef *htim);
 
-void Set_Motor_Speed(TIM_HandleTypeDef *htim, side_e side_e, direction dir, uint8_t speed);
+void motor_SetSpeed(TIM_HandleTypeDef *htim, side_e side_e, direction dir, uint8_t speed);
 
-void Motor_full_stop(TIM_HandleTypeDef *htim);
+void motor_FullStop(TIM_HandleTypeDef *htim);
 
 void Test_Speed_Settings(TIM_HandleTypeDef *htim, direction dir);
 
