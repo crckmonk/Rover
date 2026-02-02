@@ -427,7 +427,7 @@ float LSM303_ApplyTiltCompensation(lsm303dlhc_data_raw_t *magData_raw, lsm303dlh
     magData_comp->z = magData_raw->z;
 }
 
-float LSM303_GetHeadingDegrees(lsm303dlhc_data_raw_t *magData, lsm303dlhc_data_raw_t *accData){
+float LSM303_GetHeadingDegrees(lsm303dlhc_data_raw_t *magData){
     float heading = 0.0f;
 
     heading = (atan2f(magData->y, magData->x) * (180.0f / M_PI)) + DECLINATION_ANGLE;

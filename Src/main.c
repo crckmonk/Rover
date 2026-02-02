@@ -68,10 +68,11 @@ QMC_HandleTypedef	qmc_sensor;
 extern I2C_HandleTypeDef hi2c1;
 lsm303dlhc_data_raw_t lsm303dlhc_data_acc = { 0 };
 lsm303dlhc_data_raw_t lsm303dlhc_data_mag = { 0 };
+
 lsm303dlhc_data_t lsm303dlhc_data_acc_conv = { 0 };
 lsm303dlhc_data_t lsm303dlhc_data_mag_conv = { 0 };
 
-
+lsm303dlhc_data_raw_t mag_horizontal = {0};
 lsm303dlhc_data_raw_t mag_calibrated = {0};
 lsm303dlhc_data_raw_t acc_calibrated = {0};
 float heading = 0.0f;
@@ -164,14 +165,11 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
 		}
 		
 		if (lsm303dlhc_read_mag_raw(&lsm303dlhc_data_mag) == LSM303DLHC_OK) {
-			/* raw data in lsm303dlhc_data_mag */
-      heading = LSM303_GetHeadingDegrees(&lsm303dlhc_data_mag);
-      printf("Raw Heading: %0.2f deg\r\n", heading);
-      heading = LSM303_GetHeadingDegreesTiltCompensated(&lsm303dlhc_data_mag, &lsm303dlhc_data_acc);      
-      printf("Tilt compensated Heading: %0.2f deg\r\n", heading);
-      
-      LSM303_ApplyMagCalibration(&lsm303dlhc_data_mag, &mag_calibrated);
-      heading = LSM303_GetHeadingDegreesTiltCompensated(&mag_calibrated, &lsm303dlhc_data_acc);
+      LSM303_MagCalibrationUpdateRange(&lsm303dlhc_data_mag);
+      LSM303_MagCalibrationCompute();
+      LSM303_ApplyTiltCompensation(&lsm303dlhc_data_mag, &mag_horizontal, &lsm303dlhc_data_acc);
+      LSM303_ApplyMagCalibration(&mag_horizontal, &mag_calibrated);
+      heading = LSM303_GetHeadingDegrees(&mag_calibrated);
       printf("Calibrated & Tilt compensated Heading: %0.2f deg\r\n", heading);
       
 		} else {
