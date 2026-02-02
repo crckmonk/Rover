@@ -71,6 +71,10 @@ lsm303dlhc_data_raw_t lsm303dlhc_data_mag = { 0 };
 lsm303dlhc_data_t lsm303dlhc_data_acc_conv = { 0 };
 lsm303dlhc_data_t lsm303dlhc_data_mag_conv = { 0 };
 
+
+lsm303dlhc_data_raw_t mag_calibrated = {0};
+lsm303dlhc_data_raw_t acc_calibrated = {0};
+float heading = 0.0f;
 /* USER CODE END 0 */
 
 /**
@@ -116,7 +120,7 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
 	lsm303dlhc_mag_init.op = LSM303DLHC_MAGOP_CONT;
 	lsm303dlhc_mag_init.rate = LSM303DLHC_MAGRATE_15;
 	lsm303dlhc_mag_init.gain = LSM303DLHC_MAGGAIN_1_3;
-	lsm303dlhc_mag_init.auto_range = true;
+	lsm303dlhc_mag_init.auto_range = false;
 
 
   if (lsm303dlhc_init_acc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
@@ -140,15 +144,20 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
   /* USER CODE BEGIN WHILE */
   printf("START\r\n");
 
-  LSM303_CalibrateMagneto();
-  printf("Calibration done\r\n");
+ // LSM303_CalibrateMagneto();
+ // printf("Magnetometer Calibration done\r\n");
+  LSM303_CalibrateAccelerometer();
+  printf("Accelerometer Calibration done\r\n");
+  printf("Continuos magnetometer calibration mode\r\n");
   while (1)
   {
 
     if (lsm303dlhc_read_acc_raw(&lsm303dlhc_data_acc) == LSM303DLHC_OK) {
-			/* raw data in lsm303dlhc_data_acc */
-			/* if conversion is needed: */
-			lsm303dlhc_convert_acc(&lsm303dlhc_data_acc_conv, &lsm303dlhc_data_acc);
+      printf("ACC Raw X: %d, Y: %d, Z: %d\r\n", lsm303dlhc_data_acc.x, lsm303dlhc_data_acc.y, lsm303dlhc_data_acc.z);
+      LSM303_ApplyAccCalibration(&lsm303dlhc_data_acc, &acc_calibrated);
+      printf("ACC Calibrated X: %d, Y: %d, Z: %d\r\n", acc_calibrated.x, acc_calibrated.y, acc_calibrated.z);
+			lsm303dlhc_convert_acc(&lsm303dlhc_data_acc_conv, &acc_calibrated);
+      printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", lsm303dlhc_data_acc_conv.x, lsm303dlhc_data_acc_conv.y, lsm303dlhc_data_acc_conv.z);
       //printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", lsm303dlhc_data_acc_conv.x, lsm303dlhc_data_acc_conv.y, lsm303dlhc_data_acc_conv.z);
 		} else {
 			/* handle error */
@@ -156,8 +165,14 @@ lsm303dlhc_acc_init_t lsm303dlhc_acc_init = { 0 };
 		
 		if (lsm303dlhc_read_mag_raw(&lsm303dlhc_data_mag) == LSM303DLHC_OK) {
 			/* raw data in lsm303dlhc_data_mag */
-      printf("Raw Heading: %0.2f deg\r\n", LSM303_GetHeadingDegrees(&lsm303dlhc_data_mag));      
-      printf("Tilt compensated Heading: %0.2f deg\r\n", LSM303_GetHeadingDegreesTiltCompensated(&lsm303dlhc_data_mag, &lsm303dlhc_data_acc));
+      heading = LSM303_GetHeadingDegrees(&lsm303dlhc_data_mag);
+      printf("Raw Heading: %0.2f deg\r\n", heading);
+      heading = LSM303_GetHeadingDegreesTiltCompensated(&lsm303dlhc_data_mag, &lsm303dlhc_data_acc);      
+      printf("Tilt compensated Heading: %0.2f deg\r\n", heading);
+      
+      LSM303_ApplyMagCalibration(&lsm303dlhc_data_mag, &mag_calibrated);
+      heading = LSM303_GetHeadingDegreesTiltCompensated(&mag_calibrated, &lsm303dlhc_data_acc);
+      printf("Calibrated & Tilt compensated Heading: %0.2f deg\r\n", heading);
       
 		} else {
 			/* handle error */

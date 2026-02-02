@@ -22,7 +22,7 @@ static float lsm303dlhc_acc_mg_lsb = 0.001f;   // 1, 2, 4 or 12 mg per lsb
 static float lsm303dlhc_mag_gauss_lsb_xy = 1100.0f;  // Varies with gain
 static float lsm303dlhc_mag_gauss_lsb_z = 980.0f;   // Varies with gain
 static LSM303_MagCalibration_Typedef mag_cal = {0, 0, 0, 1.0f, 1.0f, 1.0f};
-
+static LSM303_AccCalibration_Typedef acc_cal = {0, 0, 0};
 
 
 /* private functions */
@@ -306,6 +306,24 @@ void lsm303dlhc_convert_mag(lsm303dlhc_data_t *conv, const lsm303dlhc_data_raw_t
     conv->z = ((float) raw->z / lsm303dlhc_mag_gauss_lsb_z) * LSM303DLHC_MAG_SENSORS_GAUSS_TO_MICROTESLA;
 }
 
+void LSM303_CalibrateAccelerometer(){
+    uint16_t samples = 500;
+    lsm303dlhc_data_raw_t acc_current;
+    int32_t acc_x_sum = 0;
+    int32_t acc_y_sum = 0;
+    int32_t acc_z_sum = 0;
+    for(uint16_t i = 0; i < samples; i++){
+        lsm303dlhc_read_acc_raw(&acc_current);
+        acc_x_sum += acc_current.x;
+        acc_y_sum += acc_current.y;
+        acc_z_sum += acc_current.z;
+        HAL_Delay(10);
+    }
+    acc_cal.x_bias = (int16_t)(acc_x_sum / samples);
+    acc_cal.y_bias = (int16_t)(acc_y_sum / samples);
+    acc_cal.z_bias = (int16_t)(acc_z_sum / samples);
+}
+
 void LSM303_CalibrateMagneto(){
     lsm303dlhc_data_raw_t mag_min = { .x = INT16_MAX, .y = INT16_MAX, .z = INT16_MAX };
     lsm303dlhc_data_raw_t mag_max = { .x = INT16_MIN, .y = INT16_MIN, .z = INT16_MIN };
@@ -343,37 +361,76 @@ void LSM303_CalibrateMagneto(){
     mag_cal.z_scale = avg_range / z_range;
 }
 
+void LSM303_MagCalibrationReset(){
+    mag_cal.x_max = INT16_MIN;
+    mag_cal.y_max = INT16_MIN;
+    mag_cal.z_max = INT16_MIN;
+    mag_cal.x_min = INT16_MAX;
+    mag_cal.y_min = INT16_MAX;
+    mag_cal.z_min = INT16_MAX;
+    mag_cal.x_offset = 0;
+    mag_cal.y_offset = 0;
+    mag_cal.z_offset = 0;
+    mag_cal.x_scale = 1.0f;
+    mag_cal.y_scale = 1.0f;
+    mag_cal.z_scale = 1.0f;
+}
+
+void LSM303_MagCalibrationUpdateRange(lsm303dlhc_data_raw_t *raw){
+    if(raw->x > mag_cal.x_max) mag_cal.x_max = raw->x;
+    if(raw->y > mag_cal.y_max) mag_cal.y_max = raw->y;
+    if(raw->z > mag_cal.z_max) mag_cal.z_max = raw->z;
+
+    if(raw->x < mag_cal.x_min) mag_cal.x_min = raw->x;
+    if(raw->y < mag_cal.y_min) mag_cal.y_min = raw->y;
+    if(raw->z < mag_cal.z_min) mag_cal.z_min = raw->z;
+}
+
+void LSM303_MagCalibrationCompute(){
+    // Hard iron correction (offset)
+    mag_cal.x_offset = (mag_cal.x_max + mag_cal.x_min) / 2;
+    mag_cal.y_offset = ( mag_cal.y_max + mag_cal.y_min) / 2;
+    mag_cal.z_offset = (mag_cal.z_max + mag_cal.z_min) / 2;
+    
+    // Soft iron correction (scale)
+    float x_range = (mag_cal.x_max - mag_cal.x_min) / 2.0f;
+    float y_range = ( mag_cal.y_max - mag_cal.y_min) / 2.0f;
+    float z_range = (mag_cal.z_max - mag_cal.z_min) / 2.0f;
+    float avg_range = (x_range + y_range + z_range) / 3.0f;
+    
+    mag_cal.x_scale = avg_range / x_range;
+    mag_cal.y_scale = avg_range / y_range;
+    mag_cal.z_scale = avg_range / z_range;
+}
+
 void LSM303_ApplyMagCalibration(lsm303dlhc_data_raw_t *raw, lsm303dlhc_data_raw_t *calibrated){
     calibrated->x = (int16_t)((raw->x - mag_cal.x_offset) * mag_cal.x_scale);
     calibrated->y = (int16_t)((raw->y - mag_cal.y_offset) * mag_cal.y_scale);
     calibrated->z = (int16_t)((raw->z - mag_cal.z_offset) * mag_cal.z_scale);
 }
 
-float LSM303_GetHeadingDegrees(lsm303dlhc_data_raw_t *magData)
-{
-    float heading = 0.0f;
+void LSM303_ApplyAccCalibration(lsm303dlhc_data_raw_t *raw, lsm303dlhc_data_raw_t *calibrated){
+    calibrated->x = raw->x - acc_cal.x_bias;
+    calibrated->y = raw->y - acc_cal.y_bias;
+    calibrated->z = raw->z - acc_cal.z_bias;
+}
 
-    heading = atan2f((float)magData->y, (float)magData->x) * 180.00/M_PI;
-
-    heading += DECLINATION_ANGLE;
+float LSM303_ApplyTiltCompensation(lsm303dlhc_data_raw_t *magData_raw, lsm303dlhc_data_raw_t *magData_comp,lsm303dlhc_data_raw_t *accData){
     
-    heading = heading < 0 ? heading + 360.0f: heading ;
-
-    // Convert radians to degrees
-    return heading;
-}   
-
-
-float LSM303_GetHeadingDegreesTiltCompensated(lsm303dlhc_data_raw_t *magData, lsm303dlhc_data_raw_t *accData){
-    float heading = 0.0f;
-
     float roll = atan2f((float)accData->y, (float)accData->z);
     float pitch = atan2f(-(float)accData->x,sqrtf((float)accData->y * (float)accData->y + (float)accData->z * (float)accData->z));
 
-    float magXh = (float)magData->x * cosf(pitch) + (float)magData->y * sinf(roll) * sinf(pitch) + (float)magData->z * cosf(roll) * sinf(pitch);
-    float magYh = (float)magData->y * cosf(roll) - (float)magData->z * sinf(roll);
+    float magXh = (float)magData_raw->x * cosf(pitch) + (float)magData_raw->y * sinf(roll) * sinf(pitch) + (float)magData_raw->z * cosf(roll) * sinf(pitch);
+    float magYh = (float)magData_raw->y * cosf(roll) - (float)magData_raw->z * sinf(roll);
+    magData_comp->x = (int16_t)magXh;
+    magData_comp->y = (int16_t)magYh;
+    magData_comp->z = magData_raw->z;
+}
 
-    heading = (atan2f(magYh, magXh) * (180.0f / M_PI)) + DECLINATION_ANGLE;
+float LSM303_GetHeadingDegrees(lsm303dlhc_data_raw_t *magData, lsm303dlhc_data_raw_t *accData){
+    float heading = 0.0f;
+
+    heading = (atan2f(magData->y, magData->x) * (180.0f / M_PI)) + DECLINATION_ANGLE;
 
     if (heading < 0.0f) {
         heading += 360.0f;
