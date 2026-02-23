@@ -1,0 +1,44 @@
+@startuml
+title UART RX with IT for ESP8266 AT responses
+
+actor "ESP Task\n(esp8266.c)" as App
+box "UART Driver\n(usart.c)" #LightBlue
+  participant "API\nUART_SendData /\nHAL_UART_Transmit_IT" as TX
+  participant "API\nHAL_UART_Receive_IT" as RXstart
+  participant "Ring Buffer\n(uart->RxBuffer,\nRxHead/RxTail,RxByte)" as Ring
+  participant "HAL Callback\nHAL_UART_RxCpltCallback" as Callback
+end box
+participant "USART HW + NVIC" as HW
+participant "AT Parser\n(look for OK, ERROR, busy,\nCRLF, +IPD...)" as Parser
+
+== Send command and arm RX ==
+App -> TX : send "AT...\\r\\n" (non-blocking)
+App -> RXstart : HAL_UART_Receive_IT(huart, &RxByte, 1)
+note right of RXstart: RX IT armed (1 byte)
+
+== Bytes arriving (repeats per byte) ==
+loop for each received byte
+  HW -> HW : RXNE (byte in RDR)
+  HW -> HW : NVIC -> USART_IRQHandler
+  HW -> Callback : HAL UART ISR reads RxByte and calls HAL_UART_RxCpltCallback
+  Callback -> Ring : push RxByte into ring buffer (RxHead++)
+  Callback -> RXstart : re-arm HAL_UART_Receive_IT(...,&RxByte,1)
+  Callback -> Parser : notify (set flag/semaphore/queue) [optional]
+  Parser -> Ring : read new bytes, append to local parser buffer
+  alt parser finds "OK" / "ERROR" / expected ACK
+    Parser -> App : signal success/error (semaphore/event)
+  else parser finds "busy"
+    Parser -> App : signal busy -> App may delay & clear buffer
+  else parser sees CRLF-terminated line or +IPD
+    Parser -> App : deliver line/message (callback/queue)
+  end
+end
+
+== Waiting / Timeout ==
+App -> App : wait on event/semaphore with timeout
+alt event signaled
+  App -> App : process response
+else timeout
+  App -> App : handle NO_RESPONSE / TIMEOUT
+end
+@enduml
