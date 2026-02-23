@@ -23,6 +23,7 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
+#include "NRF24/esp8266.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -50,7 +51,7 @@
 uint8_t RxTxAddress[5] = {0xD7,0xD7,0xD7,0xD7,0xD7};
 uint8_t txBuffer[NRF24_PAYLOAD_LENGTH] = {0};
 uint8_t rxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
-NRF24L01 nrf;
+NRF24_Handler_t nrf;
 command_packet currentCommand = {0};
 command_packet rxCmdPacket;
 /* USER CODE END PV */
@@ -65,6 +66,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 /* USER CODE BEGIN 0 */
 QMC_Handle_t	qmc_sensor;
 
+extern UART_Buffers_t UART1_Buffer;
+extern UART_Buffers_t UART6_Buffer;
 extern I2C_HandleTypeDef hi2c1;
 LSM303_RawData_t accData_raw = { 0 };
 LSM303_RawData_t magData_raw = { 0 };
@@ -111,8 +114,9 @@ int main(void)
   MX_USART1_UART_Init();
   MX_I2C1_Init();
   MX_SPI1_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
-LSM303_AccInit_t lsm303dlhc_acc_init = { 0 };
+  LSM303_AccInit_t lsm303dlhc_acc_init = { 0 };
 	LSM303_MagInit_t lsm303dlhc_mag_init = { 0 };
 	
 	lsm303dlhc_acc_init.ctrl_reg1_a = LSM303DLHC_ACR1A_XEN | LSM303DLHC_ACR1A_YEN | LSM303DLHC_ACR1A_ZEN | LSM303DLHC_ACR1A_ODR30_100_HZ;
@@ -123,14 +127,37 @@ LSM303_AccInit_t lsm303dlhc_acc_init = { 0 };
 	lsm303dlhc_mag_init.gain = LSM303DLHC_MAGGAIN_1_3;
 	lsm303dlhc_mag_init.auto_range = false;
 
+  printf("TEST\r\n");
 
-  if (LSM303_InitAcc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
-    printf("LSM303DLHC Accel Init Error\r\n");
-    }
+  printf("Testing ESP8266\r\n");
+  ESP8266_Handler_t esp_dev;
+  esp_dev.huart = &huart6;
+  esp_dev.uartBuffers = &UART6_Buffer;
+  esp_dev.ssid = (uint8_t*)"RoverAP";
+  esp_dev.password = (uint8_t*)"moronik88";
 
-	if (LSM303_InitMag(&hi2c1, &lsm303dlhc_mag_init) != LSM303DLHC_OK) {
-		printf("LSM303DLHC Mag Init Error\r\n");
-	}
+
+  if (ESP8266_Init(&esp_dev) == ESP8266_OK) {
+      printf("ESP8266 Initialized successfully\r\n");
+  } else {
+      printf("ESP8266 Initialization failed\r\n");
+  }
+  printf("RX Buffer: %s\r\n", esp_dev.rx_buffer);
+
+  if(ESP8266_Init(&esp_dev) == ESP8266_OK){
+    printf("UDP SoftAP Initialized successfully\r\n");
+  } else {
+      printf("SoftAP Initialization failed\r\n");
+  }
+  printf("RX Buffer: %s\r\n", esp_dev.rx_buffer);
+
+  // if (LSM303_InitAcc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
+  //   printf("LSM303DLHC Accel Init Error\r\n");
+  //   }
+
+	// if (LSM303_InitMag(&hi2c1, &lsm303dlhc_mag_init) != LSM303DLHC_OK) {
+	// 	printf("LSM303DLHC Mag Init Error\r\n");
+	// }
   // if(  QMC5883_Init(&qmc_sensor, &hi2c1, qmc_continus) == QMC_OK )
   // {
   //     printf("QMC5883L Initialization Successful\r\n");
@@ -143,44 +170,44 @@ LSM303_AccInit_t lsm303dlhc_acc_init = { 0 };
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  printf("START\r\n");
+  // printf("START\r\n");
 
  // LSM303_2DMagCalibration();
  // printf("Magnetometer Calibration done\r\n");
-  LSM303_CalibrateAccelerometer(200);
-  printf("Accelerometer Calibration done\r\nCalibrating magnetometer arount Z axis\r\n");
-  LSM303_2DMagCalibration(20);
-  LSM303_MagCalibration_t mag_cal;
-  LSM303_AccCalibration_t acc_cal;
-  LSM303_GetCalibrationData(&acc_cal, &mag_cal);
-  printf("Mag Cal Data:\r\n");
-  printf("X Offset: %d, Y Offset: %d, Z Offset: %d\r\n", mag_cal.x_offset, mag_cal.y_offset, mag_cal.z_offset);
-  printf("X Scale: %.3f, Y Scale: %.3f, Z Scale: %.3f\r\n", mag_cal.x_scale, mag_cal.y_scale, mag_cal.z_scale);
-  printf("Acc Cal Data:\r\n");
-  printf("X Bias: %d, Y Bias: %d, Z Bias: %d\r\n", acc_cal.x_bias, acc_cal.y_bias, acc_cal.z_bias);
-  printf("Continuos magnetometer calibration mode\r\n");
+  // LSM303_CalibrateAccelerometer(200);
+  // printf("Accelerometer Calibration done\r\nCalibrating magnetometer arount Z axis\r\n");
+  // LSM303_2DMagCalibration(20);
+  // LSM303_MagCalibration_t mag_cal;
+  // LSM303_AccCalibration_t acc_cal;
+  // LSM303_GetCalibrationData(&acc_cal, &mag_cal);
+  // printf("Mag Cal Data:\r\n");
+  // printf("X Offset: %d, Y Offset: %d, Z Offset: %d\r\n", mag_cal.x_offset, mag_cal.y_offset, mag_cal.z_offset);
+  // printf("X Scale: %.3f, Y Scale: %.3f, Z Scale: %.3f\r\n", mag_cal.x_scale, mag_cal.y_scale, mag_cal.z_scale);
+  // printf("Acc Cal Data:\r\n");
+  // printf("X Bias: %d, Y Bias: %d, Z Bias: %d\r\n", acc_cal.x_bias, acc_cal.y_bias, acc_cal.z_bias);
+  // printf("Continuos magnetometer calibration mode\r\n");
   while (1)
   {
 
-    if (LSM303_ReadAccRaw(&accData_raw) == LSM303DLHC_OK) {
-      LSM303_ApplyAccCalibration(&accData_raw, &accData_cal);
-			LSM303_ConvertAcc(&accData_grav, &accData_cal);
-      printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", accData_grav.x, accData_grav.y, accData_grav.z);
-      //printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", accData_grav.x, accData_grav.y, accData_grav.z);
-		} else {
-			/* handle error */
-		}
+    // if (LSM303_ReadAccRaw(&accData_raw) == LSM303DLHC_OK) {
+    //   LSM303_ApplyAccCalibration(&accData_raw, &accData_cal);
+		// 	LSM303_ConvertAcc(&accData_grav, &accData_cal);
+    //   printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", accData_grav.x, accData_grav.y, accData_grav.z);
+    //   //printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", accData_grav.x, accData_grav.y, accData_grav.z);
+		// } else {
+		// 	/* handle error */
+		// }
 		
-		if (LSM303_ReadMagRaw(&magData_raw) == LSM303DLHC_OK) {
-      LSM303_MagCalibrationUpdateRange(&magData_raw);
-      LSM303_MagCalibrationCompute();
-      LSM303_ApplyMagCalibration(&magData_raw, &magData_cal);
-      heading = LSM303_GetHeadingDegrees(&magData_cal);
-      printf("Calibrated heading: %0.2f deg\r\n", heading);
+		// if (LSM303_ReadMagRaw(&magData_raw) == LSM303DLHC_OK) {
+    //   LSM303_MagCalibrationUpdateRange(&magData_raw);
+    //   LSM303_MagCalibrationCompute();
+    //   LSM303_ApplyMagCalibration(&magData_raw, &magData_cal);
+    //   heading = LSM303_GetHeadingDegrees(&magData_cal);
+    //   printf("Calibrated heading: %0.2f deg\r\n", heading);
       
-		} else {
-			/* handle error */
-		}
+		// } else {
+		// 	/* handle error */
+		// }
       // QMC5883_ReadAverage(&qmc_sensor, 10, 50);
       // printf("Heading: %d.%03d deg, Compass: %d.%03d deg\r\n",
       //        qmc_sensor.avg_heading_whole,

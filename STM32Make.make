@@ -94,6 +94,7 @@ Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
+Lib/NRF24/esp8266.c \
 Lib/NRF24/nrf24.c \
 Lib/NRF24/radio.c \
 Src/QMC5883.c \
