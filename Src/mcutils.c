@@ -32,6 +32,24 @@ void I2C_Scan(I2C_HandleTypeDef *hi2c){
 }
 
 
+void DEBUG_PRINTF(DEBUG_LEVEL_t level, const char* format, ...){
+    if (level > DEBUG_LEVEL) return;
+
+    switch(level){
+        case DEBUG_ERROR:   printf("[ERROR] "); break;
+        case DEBUG_INFO:    printf("[INFO] "); break;
+        case DEBUG_VERBOSE: printf("[VERBOSE] "); break;
+        default: return;
+    }
+
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+}
+
+
+
 void print_float(float value, uint16_t decimal_places){
     int whole = (int)value;
     int decimal = (int)((value - whole) * pow(10, decimal_places));

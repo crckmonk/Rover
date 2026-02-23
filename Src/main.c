@@ -23,11 +23,11 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
-#include "NRF24/esp8266.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "NRF24/esp8266.h"
+#include "mcutils.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -128,9 +128,9 @@ int main(void)
 	lsm303dlhc_mag_init.auto_range = false;
 
  
-  printf("TEST\r\n");
+  DEBUG_PRINTF(DEBUG_INFO,"TEST\r\n");
 
-  printf("Testing ESP8266\r\n");
+  DEBUG_PRINTF(DEBUG_INFO,"Testing ESP8266\r\n");
   ESP8266_Handler_t esp_dev;
   esp_dev.huart = &huart6;
   esp_dev.uartBuffers = &UART6_Buffer;
@@ -139,17 +139,17 @@ int main(void)
  HAL_UART_Receive_IT(&huart6, &esp_dev.uartBuffers->RxByte,1);
 
   if (ESP8266_TestAT(&esp_dev) == ESP8266_OK) {
-      printf("ESP8266 Initialized successfully\r\n");
+      DEBUG_PRINTF(DEBUG_INFO,"ESP8266 Initialized successfully\r\n");
   } else {
-      printf("ESP8266 Initialization failed\r\n");
+      DEBUG_PRINTF(DEBUG_ERROR,"ESP8266 Initialization failed\r\n");
   }
   printf("RX Buffer: %s\r\n", esp_dev.rx_buffer);
 
-   if(ESP8266_Init(&esp_dev) == ESP8266_OK){
-     printf("UDP SoftAP Initialized successfully\r\n");
-   } else {
-       printf("SoftAP Initialization failed\r\n");
+    while(ESP8266_Init(&esp_dev) != ESP8266_OK){
+       printf("SoftAP Initialization failed, retrying...\r\n");
+       HAL_Delay(2000);     
    }
+   printf("UDP SoftAP Initialized successfully\r\n");
    printf("RX Buffer: %s\r\n", esp_dev.rx_buffer);
 
   // if (LSM303_InitAcc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
