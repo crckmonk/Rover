@@ -28,6 +28,9 @@
 /* USER CODE BEGIN Includes */
 #include "NRF24/esp8266.h"
 #include "mcutils.h"
+#include "yyjson.h"
+#include "motor.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -79,6 +82,71 @@ LSM303_RawData_t mag_horizontal = {0};
 LSM303_RawData_t magData_cal = {0};
 LSM303_RawData_t accData_cal = {0};
 float heading = 0.0f;
+
+
+
+static void JSON_CommandParse(uint8_t *jsonStr, command_packet* cmdPacket){
+  yyjson_doc *doc = yyjson_read(jsonStr, strlen(jsonStr), 0);
+  if (!doc) {
+    printf("Error parsing JSON\n");
+    return;
+  }
+  yyjson_val *root = yyjson_doc_get_root(doc);
+  yyjson_val *id = yyjson_obj_get(root, "id");
+  yyjson_val *type = yyjson_obj_get(root, "type");
+
+  if (strncmp(yyjson_get_str(type), "JOYSTICK", 8) == 0) {
+
+    if (strncmp(yyjson_get_str(id), "throttle", 8) == 0) {
+      yyjson_val *yVal = yyjson_obj_get(root, "y");
+      float raw_val = yyjson_get_num(yVal);
+      if(raw_val > 0){
+        uint16_t speed = (uint16_t)(raw_val * 100);
+        cmdPacket->direction = FORWARD;
+        cmdPacket->left_motors_speed = speed;
+        cmdPacket->right_motors_speed = speed;
+      } else if(raw_val < 0){
+        uint16_t speed = (uint16_t)(-raw_val * 100);
+        cmdPacket->direction = REVERSE;
+        cmdPacket->left_motors_speed = speed;
+        cmdPacket->right_motors_speed = speed;
+      } else {
+        cmdPacket->direction = STOP;
+        cmdPacket->left_motors_speed = 0;
+        cmdPacket->right_motors_speed = 0;
+      }
+    } else if (strncmp(yyjson_get_str(id), "steer", 5) == 0) {
+      yyjson_val *xVal = yyjson_obj_get(root, "x");
+      float raw_val = yyjson_get_num(xVal);
+      if ( raw_val > 0){
+        uint16_t speed = (uint16_t)(raw_val * 100);
+        cmdPacket->left_motors_speed = cmdPacket->left_motors_speed + speed > 100 ? 100 : cmdPacket->left_motors_speed + speed;
+        cmdPacket->right_motors_speed = cmdPacket->right_motors_speed > speed ? cmdPacket->right_motors_speed - speed : 0;
+      } else if(raw_val < 0){
+        uint16_t speed = (uint16_t)(-raw_val * 100);
+        cmdPacket->right_motors_speed = cmdPacket->right_motors_speed + speed > 100 ? 100 : cmdPacket->right_motors_speed + speed;
+        cmdPacket->left_motors_speed = cmdPacket->left_motors_speed > speed ? cmdPacket->left_motors_speed - speed : 0;
+      }
+    }
+  }
+}
+
+
+static void executeCommand(command_packet* cmd) {
+        switch(cmd->direction) {
+          case 0x41: // GO
+            motor_SetSpeed(&htim2, LEFT, FORWARD, cmd->left_motors_speed);
+            motor_SetSpeed(&htim2, RIGHT, FORWARD, cmd->right_motors_speed);
+            break;
+          case 0x42: // STOP
+            motor_SetSpeed(&htim2, BOTH, BRAKE, STOP);
+            break;
+          case 0x43: // RVS
+            motor_SetSpeed(&htim2, LEFT, REVERSE, cmd->left_motors_speed);
+            motor_SetSpeed(&htim2, RIGHT, REVERSE, cmd->right_motors_speed);
+            break;
+        }
+}
 /* USER CODE END 0 */
 
 /**
@@ -187,13 +255,31 @@ int main(void)
   // printf("Acc Cal Data:\r\n");
   // printf("X Bias: %d, Y Bias: %d, Z Bias: %d\r\n", acc_cal.x_bias, acc_cal.y_bias, acc_cal.z_bias);
   // printf("Continuos magnetometer calibration mode\r\n");
+  uint8_t msgBuffer[512];
+  uint8_t writing = 0;
+  uint16_t idx = 0;
+  command_packet cmdPacket = {0};
   while (1)
   {
     if (esp_dev.uartBuffers->RxHead != esp_dev.uartBuffers->RxTail)
     {
         uint8_t ch = esp_dev.uartBuffers->RxBuffer[esp_dev.uartBuffers->RxTail];
         esp_dev.uartBuffers->RxTail = (esp_dev.uartBuffers->RxTail + 1) % UART_BUFFER_SIZE;
-        printf("%c", ch);
+        if(ch == '{'){
+          writing = 1;
+        } else if(ch == '}'){
+          writing = 0;
+          msgBuffer[idx++] = '}';
+          msgBuffer[idx] = '\0';
+          //printf("Received message: %s\r\n", msgBuffer);
+          JSON_CommandParse(msgBuffer, &cmdPacket);
+          executeCommand(&cmdPacket);
+          memset(msgBuffer, 0, sizeof(msgBuffer)); // Clear buffer for next message
+          idx = 0;
+        }
+        if (writing){
+          msgBuffer[idx++] = ch;
+        }
     } else {
         HAL_Delay(10);
     }

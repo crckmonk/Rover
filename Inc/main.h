@@ -32,7 +32,6 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-#include "motor.h"
 #include "qmc5883.h"
 #include "printf.h"
 #include "printf_config.h"

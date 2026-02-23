@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 typedef struct  command_packet{
-    uint8_t packet_type;    // 0x01 = FWD; 0x02 = STOP; 0x03 = REV; 0x04 = KEEP
+    uint8_t direction;    // 0x01 = FWD; 0x02 = STOP; 0x03 = REV;
     uint8_t left_motors_speed;        // rightside motors speed
     uint8_t right_motors_speed;         // left side motors speed
     uint8_t buttons;         // Buttons as a bitmap

@@ -114,7 +114,8 @@ Src/syscalls.c \
 Src/sysmem.c \
 Src/system_stm32f4xx.c \
 Src/tim.c \
-Src/usart.c
+Src/usart.c \
+Src/yyjson.c
 
 
 CXX_SOURCES = \
