@@ -75,9 +75,12 @@ uint8_t UART_SendData(volatile UART_Buffers_t* uart, uint8_t* data, uint32_t siz
 }
 
 
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> 0f17704c0b8938512e8f562f422bdbebea35c1e2
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
     volatile UART_Buffers_t* uart = NULL;
     
