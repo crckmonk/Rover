@@ -62,6 +62,7 @@ void MX_USART6_UART_Init(void);
 void _putchar(char character);
 uint8_t UART_SendByte(volatile UART_Buffers_t* uart, uint8_t byte);
 uint8_t UART_SendData(volatile UART_Buffers_t* uart, uint8_t* data, uint32_t size);
+void UART_Flush(volatile UART_Buffers_t *uart);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

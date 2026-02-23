@@ -18,10 +18,10 @@ typedef enum  {
 } speed_e;
 
 typedef enum  {
+    BRAKE = 0,
     FORWARD,
-    REVERSE,
-    BRAKE
-} direction;
+    REVERSE
+} motor_Direction_t;
 
 typedef enum side_e {
     LEFT,
@@ -32,11 +32,11 @@ typedef enum side_e {
 
 void motor_Init(TIM_HandleTypeDef *htim);
 
-void motor_SetSpeed(TIM_HandleTypeDef *htim, side_e side_e, direction dir, uint8_t speed);
+void motor_SetSpeed(TIM_HandleTypeDef *htim, side_e side_e, motor_Direction_t dir, uint8_t speed);
 
 void motor_FullStop(TIM_HandleTypeDef *htim);
 
-void Test_Speed_Settings(TIM_HandleTypeDef *htim, direction dir);
+void Test_Speed_Settings(TIM_HandleTypeDef *htim, motor_Direction_t dir);
 
 
 #endif /* MOTOR_H */

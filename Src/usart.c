@@ -75,6 +75,17 @@ uint8_t UART_SendData(volatile UART_Buffers_t* uart, uint8_t* data, uint32_t siz
 }
 
 
+void UART_Flush(volatile UART_Buffers_t* uart){
+    uart->TxWrite = 0;
+    uart->TxRead = 0;
+    uart->TxBusy = 0;
+    uart->RxHead = 0;
+    uart->RxTail = 0;
+    uart->RxByte = 0;
+    memset(uart->TxBuffer, 0, UART_BUFFER_SIZE);
+    memset(uart->RxBuffer, 0, UART_BUFFER_SIZE);
+}
+
 
 
 

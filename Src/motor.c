@@ -12,7 +12,7 @@ void motor_Init(TIM_HandleTypeDef *htim)
   __HAL_TIM_SET_COMPARE(htim, RIGHT_REVERSE, 0);  
 }
 
-void motor_SetSpeed(TIM_HandleTypeDef *htim,  side_e side, direction dir, uint8_t speed)
+void motor_SetSpeed(TIM_HandleTypeDef *htim,  side_e side, motor_Direction_t dir, uint8_t speed)
 {
   if (side == LEFT || side == BOTH){
     switch(dir){
@@ -48,7 +48,7 @@ void motor_FullStop(TIM_HandleTypeDef *htim){
   motor_SetSpeed(htim, BOTH, BRAKE, STOP);
 }
 
-void Test_Speed_Settings(TIM_HandleTypeDef *htim, direction dir){
+void Test_Speed_Settings(TIM_HandleTypeDef *htim, motor_Direction_t dir){
     motor_SetSpeed(htim, BOTH, dir , DEAD_SLOW);
   HAL_Delay(1000);
   motor_SetSpeed(htim, BOTH, dir, SLOW);

@@ -95,11 +95,14 @@ static void JSON_CommandParse(uint8_t *jsonStr, command_packet* cmdPacket){
   yyjson_val *id = yyjson_obj_get(root, "id");
   yyjson_val *type = yyjson_obj_get(root, "type");
 
+  DEBUG_PRINTF(DEBUG_INFO, "Received JSON command: %s\r\n", jsonStr);
+
   if (strncmp(yyjson_get_str(type), "JOYSTICK", 8) == 0) {
 
     if (strncmp(yyjson_get_str(id), "throttle", 8) == 0) {
       yyjson_val *yVal = yyjson_obj_get(root, "y");
       float raw_val = yyjson_get_num(yVal);
+      DEBUG_PRINTF(DEBUG_INFO, "Throttle raw value: %.3f\r\n", raw_val);
       if(raw_val > 0){
         uint16_t speed = (uint16_t)(raw_val * 100);
         cmdPacket->direction = FORWARD;
@@ -118,6 +121,7 @@ static void JSON_CommandParse(uint8_t *jsonStr, command_packet* cmdPacket){
     } else if (strncmp(yyjson_get_str(id), "steer", 5) == 0) {
       yyjson_val *xVal = yyjson_obj_get(root, "x");
       float raw_val = yyjson_get_num(xVal);
+      DEBUG_PRINTF(DEBUG_INFO, "Steer raw value: %.3f\r\n", raw_val);
       if ( raw_val > 0){
         uint16_t speed = (uint16_t)(raw_val * 100);
         cmdPacket->left_motors_speed = cmdPacket->left_motors_speed + speed > 100 ? 100 : cmdPacket->left_motors_speed + speed;
@@ -134,14 +138,14 @@ static void JSON_CommandParse(uint8_t *jsonStr, command_packet* cmdPacket){
 
 static void executeCommand(command_packet* cmd) {
         switch(cmd->direction) {
-          case 0x41: // GO
+          case FORWARD: // GO
             motor_SetSpeed(&htim2, LEFT, FORWARD, cmd->left_motors_speed);
             motor_SetSpeed(&htim2, RIGHT, FORWARD, cmd->right_motors_speed);
             break;
-          case 0x42: // STOP
+          case BRAKE: // STOP
             motor_SetSpeed(&htim2, BOTH, BRAKE, STOP);
             break;
-          case 0x43: // RVS
+          case REVERSE: // RVS
             motor_SetSpeed(&htim2, LEFT, REVERSE, cmd->left_motors_speed);
             motor_SetSpeed(&htim2, RIGHT, REVERSE, cmd->right_motors_speed);
             break;
@@ -184,6 +188,8 @@ int main(void)
   MX_SPI1_Init();
   MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
+
+  motor_Init(&htim2);
   LSM303_AccInit_t lsm303dlhc_acc_init = { 0 };
 	LSM303_MagInit_t lsm303dlhc_mag_init = { 0 };
 	
@@ -271,8 +277,9 @@ int main(void)
           writing = 0;
           msgBuffer[idx++] = '}';
           msgBuffer[idx] = '\0';
-          //printf("Received message: %s\r\n", msgBuffer);
+          printf("Received message: %s\r\n", msgBuffer);
           JSON_CommandParse(msgBuffer, &cmdPacket);
+          printf("Parsed Command - Direction: %d, Left Speed: %d, Right Speed: %d\r\n", cmdPacket.direction, cmdPacket.left_motors_speed, cmdPacket.right_motors_speed);
           executeCommand(&cmdPacket);
           memset(msgBuffer, 0, sizeof(msgBuffer)); // Clear buffer for next message
           idx = 0;
