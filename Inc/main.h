@@ -26,6 +26,8 @@
 extern "C" {
 #endif
 
+
+
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 
@@ -39,6 +41,8 @@ extern "C" {
 #include "NRF24/nrf24.h"
 #include "NRF24/radio.h"
 #include "lsm303.h"
+#include "global_config.h"
+
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -72,18 +76,9 @@ void Error_Handler(void);
 #define NRF24_IRQ_GPIO_Port GPIOB
 #define NRF24_IRQ_EXTI_IRQn EXTI1_IRQn
 
-
-typedef enum {
-    DEBUG_NONE = 0,
-    DEBUG_ERROR,
-    DEBUG_INFO,
-    DEBUG_VERBOSE 
-} DEBUG_LEVEL_t;
-
-
-#define DEBUG_LEVEL DEBUG_VERBOSE
-
 /* USER CODE BEGIN Private defines */
+
+
 
 /* USER CODE END Private defines */
 

@@ -7,3 +7,6 @@
 [submodule "Lib/MavLink"]
 	path = Lib/MavLink
 	url = https://github.com/mavlink/c_library_v2
+[submodule "Lib/ESP8266"]
+	path = Lib/ESP8266
+	url = https://github.com/jrmejiaa/ESP8266.git

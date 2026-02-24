@@ -1,5 +1,5 @@
 #include "mcutils.h"
-#include <math.h>
+
 
 extern UART_HandleTypeDef huart1;
 

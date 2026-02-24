@@ -259,3 +259,6 @@ build/debug/printf.d
 build/debug/printf.lst
 build/debug/printf.o
 build/debug/stm32f4xx_hal_spi.lst
+cmake/gcc-arm-none-eabi.cmake
+cmake/starm-clang.cmake
+cmake/stm32cubemx/CMakeLists.txt

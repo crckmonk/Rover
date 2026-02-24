@@ -43,8 +43,7 @@
 #ifndef SRC_QMC5883L_QMC5883_H_
 #define SRC_QMC5883L_QMC5883_H_
 
-#include "main.h"
-
+#include "stm32f4xx.h"
 #define QMC_I2C_Address		0x1A
 
 #define QMC_OK			1

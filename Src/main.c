@@ -26,10 +26,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "NRF24/esp8266.h"
+//#include "NRF24/esp8266.h"
 #include "mcutils.h"
-#include "yyjson.h"
+// #include "yyjson.h"
 #include "motor.h"
+#include "ESP8266/ESP8266.h"
 
 /* USER CODE END Includes */
 
@@ -82,57 +83,58 @@ LSM303_RawData_t mag_horizontal = {0};
 LSM303_RawData_t magData_cal = {0};
 LSM303_RawData_t accData_cal = {0};
 float heading = 0.0f;
+uint8_t send_heartbeat = 0;
 
 
 
 static void JSON_CommandParse(uint8_t *jsonStr, command_packet* cmdPacket){
-  yyjson_doc *doc = yyjson_read(jsonStr, strlen(jsonStr), 0);
-  if (!doc) {
-    printf("Error parsing JSON\n");
-    return;
-  }
-  yyjson_val *root = yyjson_doc_get_root(doc);
-  yyjson_val *id = yyjson_obj_get(root, "id");
-  yyjson_val *type = yyjson_obj_get(root, "type");
+  // yyjson_doc *doc = yyjson_read(jsonStr, strlen(jsonStr), 0);
+  // if (!doc) {
+  //   printf("Error parsing JSON\n");
+  //   return;
+  // }
+  // yyjson_val *root = yyjson_doc_get_root(doc);
+  // yyjson_val *id = yyjson_obj_get(root, "id");
+  // yyjson_val *type = yyjson_obj_get(root, "type");
 
-  DEBUG_PRINTF(DEBUG_INFO, "Received JSON command: %s\r\n", jsonStr);
+  // DEBUG_PRINTF(DEBUG_INFO, "Received JSON command: %s\r\n", jsonStr);
 
-  if (strncmp(yyjson_get_str(type), "JOYSTICK", 8) == 0) {
+  // if (strncmp(yyjson_get_str(type), "JOYSTICK", 8) == 0) {
 
-    if (strncmp(yyjson_get_str(id), "throttle", 8) == 0) {
-      yyjson_val *yVal = yyjson_obj_get(root, "y");
-      float raw_val = yyjson_get_num(yVal);
-      DEBUG_PRINTF(DEBUG_INFO, "Throttle raw value: %.3f\r\n", raw_val);
-      if(raw_val > 0){
-        uint16_t speed = (uint16_t)(raw_val * 100);
-        cmdPacket->direction = FORWARD;
-        cmdPacket->left_motors_speed = speed;
-        cmdPacket->right_motors_speed = speed;
-      } else if(raw_val < 0){
-        uint16_t speed = (uint16_t)(-raw_val * 100);
-        cmdPacket->direction = REVERSE;
-        cmdPacket->left_motors_speed = speed;
-        cmdPacket->right_motors_speed = speed;
-      } else {
-        cmdPacket->direction = STOP;
-        cmdPacket->left_motors_speed = 0;
-        cmdPacket->right_motors_speed = 0;
-      }
-    } else if (strncmp(yyjson_get_str(id), "steer", 5) == 0) {
-      yyjson_val *xVal = yyjson_obj_get(root, "x");
-      float raw_val = yyjson_get_num(xVal);
-      DEBUG_PRINTF(DEBUG_INFO, "Steer raw value: %.3f\r\n", raw_val);
-      if ( raw_val > 0){
-        uint16_t speed = (uint16_t)(raw_val * 100);
-        cmdPacket->left_motors_speed = cmdPacket->left_motors_speed + speed > 100 ? 100 : cmdPacket->left_motors_speed + speed;
-        cmdPacket->right_motors_speed = cmdPacket->right_motors_speed > speed ? cmdPacket->right_motors_speed - speed : 0;
-      } else if(raw_val < 0){
-        uint16_t speed = (uint16_t)(-raw_val * 100);
-        cmdPacket->right_motors_speed = cmdPacket->right_motors_speed + speed > 100 ? 100 : cmdPacket->right_motors_speed + speed;
-        cmdPacket->left_motors_speed = cmdPacket->left_motors_speed > speed ? cmdPacket->left_motors_speed - speed : 0;
-      }
-    }
-  }
+  //   if (strncmp(yyjson_get_str(id), "throttle", 8) == 0) {
+  //     yyjson_val *yVal = yyjson_obj_get(root, "y");
+  //     float raw_val = yyjson_get_num(yVal);
+  //     DEBUG_PRINTF(DEBUG_INFO, "Throttle raw value: %.3f\r\n", raw_val);
+  //     if(raw_val > 0){
+  //       uint16_t speed = (uint16_t)(raw_val * 100);
+  //       cmdPacket->direction = FORWARD;
+  //       cmdPacket->left_motors_speed = speed;
+  //       cmdPacket->right_motors_speed = speed;
+  //     } else if(raw_val < 0){
+  //       uint16_t speed = (uint16_t)(-raw_val * 100);
+  //       cmdPacket->direction = REVERSE;
+  //       cmdPacket->left_motors_speed = speed;
+  //       cmdPacket->right_motors_speed = speed;
+  //     } else {
+  //       cmdPacket->direction = STOP;
+  //       cmdPacket->left_motors_speed = 0;
+  //       cmdPacket->right_motors_speed = 0;
+  //     }
+  //   } else if (strncmp(yyjson_get_str(id), "steer", 5) == 0) {
+  //     yyjson_val *xVal = yyjson_obj_get(root, "x");
+  //     float raw_val = yyjson_get_num(xVal);
+  //     DEBUG_PRINTF(DEBUG_INFO, "Steer raw value: %.3f\r\n", raw_val);
+  //     if ( raw_val > 0){
+  //       uint16_t speed = (uint16_t)(raw_val * 100);
+  //       cmdPacket->left_motors_speed = cmdPacket->left_motors_speed + speed > 100 ? 100 : cmdPacket->left_motors_speed + speed;
+  //       cmdPacket->right_motors_speed = cmdPacket->right_motors_speed > speed ? cmdPacket->right_motors_speed - speed : 0;
+  //     } else if(raw_val < 0){
+  //       uint16_t speed = (uint16_t)(-raw_val * 100);
+  //       cmdPacket->right_motors_speed = cmdPacket->right_motors_speed + speed > 100 ? 100 : cmdPacket->right_motors_speed + speed;
+  //       cmdPacket->left_motors_speed = cmdPacket->left_motors_speed > speed ? cmdPacket->left_motors_speed - speed : 0;
+  //     }
+  //   }
+  // }
 }
 
 
@@ -150,6 +152,14 @@ static void executeCommand(command_packet* cmd) {
             motor_SetSpeed(&htim2, RIGHT, REVERSE, cmd->right_motors_speed);
             break;
         }
+}
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
+{
+  if(htim->Instance == TIM3){
+    send_heartbeat = 1;
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+  }
 }
 /* USER CODE END 0 */
 
@@ -187,8 +197,8 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI1_Init();
   MX_USART6_UART_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
-
   motor_Init(&htim2);
   LSM303_AccInit_t lsm303dlhc_acc_init = { 0 };
 	LSM303_MagInit_t lsm303dlhc_mag_init = { 0 };
@@ -201,30 +211,36 @@ int main(void)
 	lsm303dlhc_mag_init.gain = LSM303DLHC_MAGGAIN_1_3;
 	lsm303dlhc_mag_init.auto_range = false;
 
- 
-  DEBUG_PRINTF(DEBUG_INFO,"TEST\r\n");
-
   DEBUG_PRINTF(DEBUG_INFO,"Testing ESP8266\r\n");
-  ESP8266_Handler_t esp_dev;
-  esp_dev.huart = &huart6;
-  esp_dev.uartBuffers = &UART6_Buffer;
-  esp_dev.ssid = (uint8_t*)"RoverAP";
-  esp_dev.password = (uint8_t*)"moronik88";
- HAL_UART_Receive_IT(&huart6, &esp_dev.uartBuffers->RxByte,1);
 
-  if (ESP8266_TestAT(&esp_dev) == ESP8266_OK) {
-      DEBUG_PRINTF(DEBUG_INFO,"ESP8266 Initialized successfully\r\n");
+  if(Wifi_Init() == true){
+    DEBUG_PRINTF(DEBUG_INFO,"ESP8266 Initialized successfully\r\n");
   } else {
-      DEBUG_PRINTF(DEBUG_ERROR,"ESP8266 Initialization failed\r\n");
+    DEBUG_PRINTF(DEBUG_ERROR,"ESP8266 Initialization failed\r\n");
   }
-  printf("RX Buffer: %s\r\n", esp_dev.rx_buffer);
 
-    while(ESP8266_Init(&esp_dev) != ESP8266_OK){
-       printf("SoftAP Initialization failed, retrying...\r\n");
-       HAL_Delay(2000);     
-   }
-   printf("UDP SoftAP Initialized successfully\r\n");
-   printf("RX Buffer: %s\r\n", esp_dev.rx_buffer);
+//   ESP8266_Handler_t esp_dev;
+//   esp_dev.huart = &huart6;
+//   esp_dev.uartBuffers = &UART6_Buffer;
+//   esp_dev.ssid = (uint8_t*)"RoverAP";
+//   esp_dev.password = (uint8_t*)"moronik88";
+//  HAL_UART_Receive_IT(&huart6, &esp_dev.uartBuffers->RxByte,1);
+
+//   if (ESP8266_TestAT(&esp_dev) == ESP8266_OK) {
+//       DEBUG_PRINTF(DEBUG_INFO,"ESP8266 Initialized successfully\r\n");
+//   } else {
+//       DEBUG_PRINTF(DEBUG_ERROR,"ESP8266 Initialization failed\r\n");
+//   }
+//   printf("RX Buffer: %s\r\n", esp_dev.rx_buffer);
+
+//     while(ESP8266_Init(&esp_dev) != ESP8266_OK){
+//        printf("SoftAP Initialization failed, retrying...\r\n");
+//        HAL_Delay(2000);     
+//    }
+//    printf("UDP SoftAP Initialized successfully\r\n");
+//    printf("RX Buffer: %s\r\n", esp_dev.rx_buffer);
+//    DEBUG_PRINTF(DEBUG_INFO,"Transmitting heartbeat\r\n");
+  HAL_TIM_Base_Start_IT(&htim3);
 
   // if (LSM303_InitAcc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
   //   printf("LSM303DLHC Accel Init Error\r\n");
@@ -267,29 +283,33 @@ int main(void)
   command_packet cmdPacket = {0};
   while (1)
   {
-    if (esp_dev.uartBuffers->RxHead != esp_dev.uartBuffers->RxTail)
-    {
-        uint8_t ch = esp_dev.uartBuffers->RxBuffer[esp_dev.uartBuffers->RxTail];
-        esp_dev.uartBuffers->RxTail = (esp_dev.uartBuffers->RxTail + 1) % UART_BUFFER_SIZE;
-        if(ch == '{'){
-          writing = 1;
-        } else if(ch == '}'){
-          writing = 0;
-          msgBuffer[idx++] = '}';
-          msgBuffer[idx] = '\0';
-          printf("Received message: %s\r\n", msgBuffer);
-          JSON_CommandParse(msgBuffer, &cmdPacket);
-          printf("Parsed Command - Direction: %d, Left Speed: %d, Right Speed: %d\r\n", cmdPacket.direction, cmdPacket.left_motors_speed, cmdPacket.right_motors_speed);
-          executeCommand(&cmdPacket);
-          memset(msgBuffer, 0, sizeof(msgBuffer)); // Clear buffer for next message
-          idx = 0;
-        }
-        if (writing){
-          msgBuffer[idx++] = ch;
-        }
-    } else {
-        HAL_Delay(10);
+    if (send_heartbeat) {
+      // /MavLink_SendHeartbeat(&esp_dev);
+      send_heartbeat = 0;
     }
+    // if (esp_dev.uartBuffers->RxHead != esp_dev.uartBuffers->RxTail)
+    // {
+    //     uint8_t ch = esp_dev.uartBuffers->RxBuffer[esp_dev.uartBuffers->RxTail];
+    //     esp_dev.uartBuffers->RxTail = (esp_dev.uartBuffers->RxTail + 1) % UART_BUFFER_SIZE;
+    //     if(ch == '{'){
+    //       writing = 1;
+    //     } else if(ch == '}'){
+    //       writing = 0;
+    //       msgBuffer[idx++] = '}';
+    //       msgBuffer[idx] = '\0';
+    //       printf("Received message: %s\r\n", msgBuffer);
+    //       JSON_CommandParse(msgBuffer, &cmdPacket);
+    //       printf("Parsed Command - Direction: %d, Left Speed: %d, Right Speed: %d\r\n", cmdPacket.direction, cmdPacket.left_motors_speed, cmdPacket.right_motors_speed);
+    //       executeCommand(&cmdPacket);
+    //       memset(msgBuffer, 0, sizeof(msgBuffer)); // Clear buffer for next message
+    //       idx = 0;
+    //     }
+    //     if (writing){
+    //       msgBuffer[idx++] = ch;
+    //     }
+    // } else {
+        HAL_Delay(10);
+    // }
 
     // if (LSM303_ReadAccRaw(&accData_raw) == LSM303DLHC_OK) {
     //   LSM303_ApplyAccCalibration(&accData_raw, &accData_cal);
