@@ -41,7 +41,6 @@ extern "C" {
 #include "NRF24/nrf24.h"
 #include "NRF24/radio.h"
 #include "lsm303.h"
-#include "global_config.h"
 
 /* USER CODE END Includes */
 

@@ -30,7 +30,8 @@
 #include "mcutils.h"
 // #include "yyjson.h"
 #include "motor.h"
-#include "ESP8266/ESP8266.h"
+#include "NRF24/ESP8266.h"
+#include "global_config.h"
 
 /* USER CODE END Includes */
 
@@ -213,34 +214,21 @@ int main(void)
 
   DEBUG_PRINTF(DEBUG_INFO,"Testing ESP8266\r\n");
 
-  if(Wifi_Init() == true){
-    DEBUG_PRINTF(DEBUG_INFO,"ESP8266 Initialized successfully\r\n");
-  } else {
-    DEBUG_PRINTF(DEBUG_ERROR,"ESP8266 Initialization failed\r\n");
-  }
+  ESP8266_Handler_t esp_dev;
+  esp_dev.huart = &huart6;
+  esp_dev.uart_buffers = &UART6_Buffer;
+  esp_dev.ssid = (uint8_t*)"RoverAP";
+  esp_dev.password = (uint8_t*)"moronik88";
+ HAL_UART_Receive_IT(&huart6, &esp_dev.uart_buffers->RxByte,1);
 
-//   ESP8266_Handler_t esp_dev;
-//   esp_dev.huart = &huart6;
-//   esp_dev.uartBuffers = &UART6_Buffer;
-//   esp_dev.ssid = (uint8_t*)"RoverAP";
-//   esp_dev.password = (uint8_t*)"moronik88";
-//  HAL_UART_Receive_IT(&huart6, &esp_dev.uartBuffers->RxByte,1);
-
-//   if (ESP8266_TestAT(&esp_dev) == ESP8266_OK) {
-//       DEBUG_PRINTF(DEBUG_INFO,"ESP8266 Initialized successfully\r\n");
-//   } else {
-//       DEBUG_PRINTF(DEBUG_ERROR,"ESP8266 Initialization failed\r\n");
-//   }
-//   printf("RX Buffer: %s\r\n", esp_dev.rx_buffer);
-
-//     while(ESP8266_Init(&esp_dev) != ESP8266_OK){
-//        printf("SoftAP Initialization failed, retrying...\r\n");
-//        HAL_Delay(2000);     
-//    }
-//    printf("UDP SoftAP Initialized successfully\r\n");
-//    printf("RX Buffer: %s\r\n", esp_dev.rx_buffer);
-//    DEBUG_PRINTF(DEBUG_INFO,"Transmitting heartbeat\r\n");
-  HAL_TIM_Base_Start_IT(&htim3);
+  while(ESP8266_UDPSoftAP(&esp_dev) != ESP8266_OK){
+       DEBUG_PRINTF(DEBUG_ERROR,"SoftAP Initialization failed, retrying...\r\n");
+       HAL_Delay(1000);     
+   }
+   DEBUG_PRINTF(DEBUG_INFO,"UDP SoftAP Initialized successfully\r\n");
+   DEBUG_PRINTF(DEBUG_VERBOSE, "RX Buffer: %s\r\n", esp_dev.rx_buffer);
+   DEBUG_PRINTF(DEBUG_INFO,"Transmitting heartbeat\r\n");
+   HAL_TIM_Base_Start_IT(&htim3);
 
   // if (LSM303_InitAcc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
   //   printf("LSM303DLHC Accel Init Error\r\n");
@@ -283,14 +271,15 @@ int main(void)
   command_packet cmdPacket = {0};
   while (1)
   {
+    ESP8266_MainLoop(&esp_dev);
     if (send_heartbeat) {
-      // /MavLink_SendHeartbeat(&esp_dev);
+      MavLink_SendHeartbeat(&esp_dev);
       send_heartbeat = 0;
     }
-    // if (esp_dev.uartBuffers->RxHead != esp_dev.uartBuffers->RxTail)
+    // if (esp_dev.uart_buffers->RxHead != esp_dev.uart_buffers->RxTail)
     // {
-    //     uint8_t ch = esp_dev.uartBuffers->RxBuffer[esp_dev.uartBuffers->RxTail];
-    //     esp_dev.uartBuffers->RxTail = (esp_dev.uartBuffers->RxTail + 1) % UART_BUFFER_SIZE;
+    //     uint8_t ch = esp_dev.uart_buffers->RxBuffer[esp_dev.uart_buffers->RxTail];
+    //     esp_dev.uart_buffers->RxTail = (esp_dev.uart_buffers->RxTail + 1) % UART_BUFFER_SIZE;
     //     if(ch == '{'){
     //       writing = 1;
     //     } else if(ch == '}'){
@@ -308,7 +297,6 @@ int main(void)
     //       msgBuffer[idx++] = ch;
     //     }
     // } else {
-        HAL_Delay(10);
     // }
 
     // if (LSM303_ReadAccRaw(&accData_raw) == LSM303DLHC_OK) {

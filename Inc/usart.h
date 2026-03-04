@@ -53,6 +53,14 @@ typedef struct {
      uint16_t RxTail;
      uint8_t RxByte;  // Single byte for HAL_UART_Receive_IT
 } UART_Buffers_t;
+
+typedef enum {
+  UART_ERROR = 0,
+  UART_OK,
+  UART_EMPTY
+} UART_Status_t;
+
+
 /* USER CODE END Private defines */
 
 void MX_USART1_UART_Init(void);
@@ -60,8 +68,10 @@ void MX_USART6_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 void _putchar(char character);
-uint8_t UART_SendByte(volatile UART_Buffers_t* uart, uint8_t byte);
-uint8_t UART_SendData(volatile UART_Buffers_t* uart, uint8_t* data, uint32_t size);
+UART_Status_t UART_SendByte(volatile UART_Buffers_t* uart, uint8_t byte);
+UART_Status_t UART_SendData(volatile UART_Buffers_t* uart, uint8_t* data, uint32_t size);
+uint8_t UART_GetByte(volatile UART_Buffers_t *uart);
+uint8_t UART_RxDataAvailable(volatile UART_Buffers_t *uart);
 void UART_Flush(volatile UART_Buffers_t *uart);
 /* USER CODE END Prototypes */
 

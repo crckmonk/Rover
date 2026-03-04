@@ -45,14 +45,14 @@ volatile UART_Buffers_t UART6_Buffer = {
 
 
  
-uint8_t UART_SendByte(volatile UART_Buffers_t* uart, uint8_t byte)
+UART_Status_t UART_SendByte(volatile UART_Buffers_t* uart, uint8_t byte)
 {
     uint16_t nextHead = (uart->TxWrite + 1) % UART_BUFFER_SIZE;
     uint32_t time_start = HAL_GetTick();
     while (nextHead == uart->TxRead && (HAL_GetTick() - time_start) < UART_TIMEOUT) {}
 
     if (nextHead == UART1_Buffer.TxRead){
-      return 0; 
+      return UART_ERROR; 
     }
     
     uart->TxBuffer[uart->TxWrite] = byte;
@@ -62,16 +62,29 @@ uint8_t UART_SendByte(volatile UART_Buffers_t* uart, uint8_t byte)
       HAL_UART_Transmit_IT(uart->huart,(uint8_t*)&uart->TxBuffer[uart->TxRead],1);
     } 
     
-    return 1; 
+    return UART_OK; 
 }
 
-uint8_t UART_SendData(volatile UART_Buffers_t* uart, uint8_t* data, uint32_t size){
+UART_Status_t UART_SendData(volatile UART_Buffers_t* uart, uint8_t* data, uint32_t size){
     for (uint32_t i = 0; i < size; i++){
         if (!UART_SendByte(uart, data[i])){
-            return 0;
+            return UART_ERROR;
         }
     }
-    return 1; 
+    return UART_OK; 
+}
+
+uint8_t UART_GetByte(volatile UART_Buffers_t* uart){
+  uint8_t byte = '\0';
+  if(UART_RxDataAvailable(uart)){
+    byte = uart->RxBuffer[uart->RxTail];
+    uart->RxTail = (uart->RxTail + 1) % UART_BUFFER_SIZE;
+  }
+  return byte;
+}
+
+uint8_t UART_RxDataAvailable(volatile UART_Buffers_t* uart){
+  return (uart->RxHead != uart->RxTail)?0x01:0x0;
 }
 
 
@@ -84,6 +97,7 @@ void UART_Flush(volatile UART_Buffers_t* uart){
     uart->RxByte = 0;
     memset(uart->TxBuffer, 0, UART_BUFFER_SIZE);
     memset(uart->RxBuffer, 0, UART_BUFFER_SIZE);
+    HAL_UART_Receive_IT(uart->huart, &uart->RxByte, 1);
 }
 
 

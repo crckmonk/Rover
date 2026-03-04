@@ -56,7 +56,6 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     Inc
     Lib
-    Lib/ESP8266
     Lib/NRF24
     Lib/MavLink
 )
@@ -75,11 +74,8 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     # Add user defined libraries
 )
 
-set(OPENOCD_EXECUTABLE
-    "C:/Users/bernd/AppData/Roaming/Code/User/globalStorage/bmd.stm32-for-vscode/@xpack-dev-tools/openocd/0.12.0-7.1/.content/bin/openocd.exe"
-    CACHE FILEPATH "OpenOCD binary")
 add_custom_target(flash
-    COMMAND ${OPENOCD_EXECUTABLE} -f ${CMAKE_SOURCE_DIR}/openocd.cfg -c "program ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.elf verify reset exit"
+    COMMAND openocd -f ${CMAKE_SOURCE_DIR}/openocd.cfg -c "program ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.elf verify reset exit"
     DEPENDS ${CMAKE_PROJECT_NAME}
     COMMENT "Flashing ${CMAKE_PROJECT_NAME}.elf to target"
 )
