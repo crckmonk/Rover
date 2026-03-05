@@ -39,7 +39,7 @@ extern UART_HandleTypeDef huart6;
 /* USER CODE BEGIN Private defines */
 
 
-#define UART_BUFFER_SIZE 256
+#define UART_BUFFER_SIZE 512
 
 
 typedef struct {
