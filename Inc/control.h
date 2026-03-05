@@ -3,9 +3,11 @@
 #ifndef __CONTROL_H
 #define __CONTROL_H
 
-#include <stdint.h>
+#include "stm32f4xx.h"
+#include "common/mavlink.h"
 
 typedef struct  command_packet{
+    /**/
     uint8_t direction;    // 0x01 = FWD; 0x02 = STOP; 0x03 = REV;
     uint8_t left_motors_speed;        // rightside motors speed
     uint8_t right_motors_speed;         // left side motors speed
@@ -15,6 +17,17 @@ typedef struct  command_packet{
     uint8_t reserved3;
     uint8_t reserved4;
 } command_packet;
+
+typedef struct Rover_t{
+    uint8_t armed;
+    MAV_MODE mode;
+    uint32_t last_control_time;
+    uint8_t left_motor;
+    uint8_t right_motor;
+    uint32_t failed_tx;
+} Rover_t;
+
+
 
 
 #endif

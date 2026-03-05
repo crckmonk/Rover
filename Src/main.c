@@ -276,10 +276,10 @@ int main(void)
       MavLink_SendHeartbeat(&esp_dev);
       send_heartbeat = 0;
     }
-    // if (esp_dev.uart_buffers->RxHead != esp_dev.uart_buffers->RxTail)
+    // if (esp_dev.uart_buffers->RxWrite != esp_dev.uart_buffers->RxRead)
     // {
-    //     uint8_t ch = esp_dev.uart_buffers->RxBuffer[esp_dev.uart_buffers->RxTail];
-    //     esp_dev.uart_buffers->RxTail = (esp_dev.uart_buffers->RxTail + 1) % UART_BUFFER_SIZE;
+    //     uint8_t ch = esp_dev.uart_buffers->RxBuffer[esp_dev.uart_buffers->RxRead];
+    //     esp_dev.uart_buffers->RxRead = (esp_dev.uart_buffers->RxRead + 1) % UART_BUFFER_SIZE;
     //     if(ch == '{'){
     //       writing = 1;
     //     } else if(ch == '}'){

@@ -49,8 +49,8 @@ typedef struct {
      uint16_t TxRead;
      uint8_t TxBusy;
      uint8_t RxBuffer[UART_BUFFER_SIZE];
-     uint16_t RxHead;
-     uint16_t RxTail;
+     uint16_t RxWrite;
+     uint16_t RxRead;
      uint8_t RxByte;  // Single byte for HAL_UART_Receive_IT
 } UART_Buffers_t;
 
