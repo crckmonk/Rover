@@ -39,16 +39,16 @@ extern UART_HandleTypeDef huart6;
 /* USER CODE BEGIN Private defines */
 
 
-#define UART_BUFFER_SIZE 512
-
+#define UART_TX_BUFFER_SIZE 512
+#define UART_RX_BUFFER_SIZE 2048
 
 typedef struct {
      UART_HandleTypeDef* huart;
-     uint8_t TxBuffer[UART_BUFFER_SIZE];
+     uint8_t TxBuffer[UART_TX_BUFFER_SIZE];
      uint16_t TxWrite;
      uint16_t TxRead;
      uint8_t TxBusy;
-     uint8_t RxBuffer[UART_BUFFER_SIZE];
+     uint8_t RxBuffer[UART_RX_BUFFER_SIZE];
      uint16_t RxWrite;
      uint16_t RxRead;
      uint8_t RxByte;  // Single byte for HAL_UART_Receive_IT
@@ -72,7 +72,8 @@ UART_Status_t UART_SendByte(volatile UART_Buffers_t* uart, uint8_t byte);
 UART_Status_t UART_SendData(volatile UART_Buffers_t* uart, uint8_t* data, uint32_t size);
 uint8_t UART_GetByte(volatile UART_Buffers_t *uart);
 uint8_t UART_RxDataAvailable(volatile UART_Buffers_t *uart);
-void UART_Flush(volatile UART_Buffers_t *uart);
+void UART_FlushTx(volatile UART_Buffers_t* uart);
+void UART_FlushRx(volatile UART_Buffers_t *uart);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

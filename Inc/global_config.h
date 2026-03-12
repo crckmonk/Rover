@@ -1,7 +1,7 @@
 #ifndef GLOBAL_CONFIG_H
 #define GLOBAL_CONFIG_H
 
-#define DEBUG_LEVEL DEBUG_INFO
+#define DEBUG_LEVEL DEBUG_VERBOSE
 #define SYSTEM_ID 1
 
 typedef enum {

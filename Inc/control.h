@@ -19,13 +19,12 @@ typedef struct  command_packet{
 } command_packet;
 
 typedef struct Rover_t{
-    uint8_t armed;
+    uint32_t SYSTEM_ID;
     MAV_MODE mode;
     MAV_STATE status;
     uint32_t last_control_time;
     uint8_t left_motor;
     uint8_t right_motor;
-    uint32_t failed_tx;
 } Rover_t;
 
 

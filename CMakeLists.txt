@@ -37,6 +37,18 @@ enable_language(C ASM)
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
 
+set(TEST_INCLUDES
+    -I${CMAKE_SOURCE_DIR}/Lib
+    -I${CMAKE_SOURCE_DIR}/Lib/MavLink
+)
+
+add_custom_command(OUTPUT ${CMAKE_SOURCE_DIR}/tools/test.exe
+    COMMAND gcc ${TEST_INCLUDES} tools/test.c -o tools/test.exe -std=gnu2x
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    DEPENDS tools/test.c
+)
+
+add_custom_target(test ALL DEPENDS ${CMAKE_SOURCE_DIR}/tools/test.exe)
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
