@@ -7,9 +7,19 @@
 #include "printf.h"
 #include <stdarg.h>
 
+#define DEBUG_LEVEL DEBUG_VERBOSE
+
+typedef enum {
+    DEBUG_NONE = 0,
+    DEBUG_ERROR,
+    DEBUG_INFO,
+    DEBUG_VERBOSE 
+} DEBUG_LEVEL_t;
+
 void I2C_Scan(I2C_HandleTypeDef *hi2c);
 
-void DEBUG_PRINTF(DEBUG_LEVEL_t level, const char *format, ...);
+void DEBUG_PRINTF(DEBUG_LEVEL_t level, const char* format, ...);
+
 
 void print_float(float value, uint16_t decimal_places);
 

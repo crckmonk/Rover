@@ -1,0 +1,110 @@
+@startuml
+title ESP8266_ProcessByte State Machine
+
+[*] --> ESP_STATE_IDLE
+
+state "ESP_STATE_IDLE/\nESP_STATE_AWAIT_RESPONSE" as IDLE_AWAIT {
+    state "Process Byte" as ProcessByte
+    
+    [*] --> ProcessByte
+    
+    ProcessByte --> CheckNewline : byte == '\\n'
+    ProcessByte --> CheckIPD : byte == ':' AND\nrx_buffer starts with "+IPD,"
+    ProcessByte --> CheckPrompt : byte == '>'
+    ProcessByte --> AppendByte : byte != '\\r'
+    ProcessByte --> [*] : byte == '\\r'\\n(ignore)
+    
+    state CheckNewline {
+        [*] --> NullTerminate
+        NullTerminate --> CopyToResponse : response_index has space
+        CopyToResponse --> CheckTerminal
+        CheckTerminal --> SetComplete : "OK" OR "ERROR" OR\n"FAIL" OR "SEND OK"
+        CheckTerminal --> ResetIndex : not terminal response
+        SetComplete --> ResetIndex
+        NullTerminate --> CheckTerminal : buffer full\n(skip copy)
+        ResetIndex --> [*] : rx_index = 0
+    }
+    
+    state CheckIPD {
+        [*] --> NullTerminateIPD
+        NullTerminateIPD --> ParseLength : Parse IPD length\nfrom rx_buffer
+        ParseLength --> ValidateLength
+        ValidateLength --> SwitchToIPD : length > 0 AND\nlength < MAX_BUFFER
+        ValidateLength --> ResetIndexIPD : invalid length
+        SwitchToIPD : state = ESP_STATE_IPD_DATA\nipd_received = 0
+        SwitchToIPD --> ResetIndexIPD
+        ResetIndexIPD --> [*] : rx_index = 0
+    }
+    
+    state CheckPrompt {
+        [*] --> SetPromptComplete : response_complete = true
+        SetPromptComplete --> ResetPromptIndex : rx_index = 0
+        ResetPromptIndex --> [*]
+    }
+    
+    state AppendByte {
+        [*] --> CheckBufferSpace
+        CheckBufferSpace --> AddToBuffer : rx_index < buffer_size - 1
+        CheckBufferSpace --> DropByte : buffer full
+        AddToBuffer : rx_buffer[rx_index++] = byte
+        AddToBuffer --> [*]
+        DropByte --> [*]
+    }
+}
+
+IDLE_AWAIT --> ESP_STATE_IPD_DATA : IPD header detected\nwith valid length
+
+state ESP_STATE_IPD_DATA {
+    state "Collect IPD Data" as CollectIPD
+    
+    [*] --> CollectIPD
+    
+    CollectIPD --> StoreIPDByte : ipd_received < buffer_size
+    CollectIPD --> CheckIPDComplete
+    
+    StoreIPDByte : ipd_data[ipd_received++] = byte
+    StoreIPDByte --> CheckIPDComplete
+    
+    CheckIPDComplete --> ProcessComplete : ipd_received >= current_ipd.length
+    CheckIPDComplete --> [*] : still collecting
+    
+    ProcessComplete --> HandleIPD : handle_ipd_data(ipd_data, length)
+    HandleIPD --> RestoreState : state = ESP_STATE_AWAIT_RESPONSE\nipd_received = 0
+    RestoreState --> [*]
+}
+
+ESP_STATE_IPD_DATA --> IDLE_AWAIT : IPD data complete
+
+note right of IDLE_AWAIT
+  **Byte Classification:**
+  • '\n' → End of line, process response
+  • ':' after "+IPD," → Start IPD data
+  • '>' → Data send prompt
+  • '\r' → Ignore (carriage return)
+  • Other → Append to rx_buffer
+end note
+
+note right of ESP_STATE_IPD_DATA
+  **IPD Data Collection:**
+  • Collects binary data bytes
+  • No special character handling
+  • Fixed length from IPD header
+  • Calls handle_ipd_data() when complete
+end note
+
+note bottom
+  **Static Variables (persistent across calls):**
+  • ipd_received: Tracks bytes collected for current IPD
+  • ipd_data[]: Buffer for IPD payload
+  • current_ipd: Stores parsed IPD header
+  
+  **Terminal Responses:**
+  Set response_complete flag:
+  • "OK"
+  • "ERROR"
+  • "FAIL"
+  • "SEND OK"
+  • ">" (data prompt)
+end note
+
+@enduml

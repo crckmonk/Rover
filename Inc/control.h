@@ -5,6 +5,7 @@
 
 #include "stm32f4xx.h"
 #include "common/mavlink.h"
+#include "mcutils.h"
 
 typedef struct  command_packet{
     /**/
@@ -31,3 +32,21 @@ typedef struct Rover_t{
 
 
 #endif
+
+void Rover_ResetState();
+
+void Rover_SetState(MAV_STATE state);
+
+MAV_STATE Rover_GetState();
+
+uint8_t Rover_CheckArmed();
+
+uint8_t Rover_Disarm();
+
+uint8_t Rover_Arm();
+
+uint32_t Rover_GetId();
+
+MAV_MODE Rover_GetMode();
+
+void Rover_ApplyManualControl(mavlink_manual_control_t* control_msg);

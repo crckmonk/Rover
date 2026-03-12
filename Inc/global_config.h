@@ -1,14 +1,12 @@
 #ifndef GLOBAL_CONFIG_H
 #define GLOBAL_CONFIG_H
+#include <stdarg.h>
+#include "printf.h"
 
-#define DEBUG_LEVEL DEBUG_VERBOSE
-#define SYSTEM_ID 1
 
-typedef enum {
-    DEBUG_NONE = 0,
-    DEBUG_ERROR,
-    DEBUG_INFO,
-    DEBUG_VERBOSE 
-} DEBUG_LEVEL_t;
+
+
+
+
 
 #endif // GLOBAL_CONFIG_H\

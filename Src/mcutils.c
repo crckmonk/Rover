@@ -30,8 +30,6 @@ void I2C_Scan(I2C_HandleTypeDef *hi2c){
     }
     printf("%s",EndMSG);
 }
-
-
 void DEBUG_PRINTF(DEBUG_LEVEL_t level, const char* format, ...){
     if (level > DEBUG_LEVEL) return;
 
