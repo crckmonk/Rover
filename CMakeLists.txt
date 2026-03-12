@@ -8,7 +8,7 @@ cmake_minimum_required(VERSION 3.22)
 #
 
 # Setup compiler settings
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
@@ -18,12 +18,15 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
+SET(CMAKE_COLOR_MAKEFILE ON)
+# And optionally
+SET(CMAKE_VERBOSE_MAKEFILE ON)
 # Set the project name
+SET(CMAKE_COLOR_DIAGNOSTICS ON)
 set(CMAKE_PROJECT_NAME Rover)
 
 # Enable compile command to ease indexing with e.g. clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
-
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})

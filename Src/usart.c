@@ -16,8 +16,8 @@
   *
   ******************************************************************************
  * TODO: Add RX/TX buffers and interrupt handlers for USART1 and USART6
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
+USER CODE END Header
+Includes ------------------------------------------------------------------*/
 #include "usart.h"
 
 /* USER CODE BEGIN 0 */
@@ -47,7 +47,7 @@ volatile UART_Buffers_t UART6_Buffer = {
  
 UART_Status_t UART_SendByte(volatile UART_Buffers_t* uart, uint8_t byte)
 {
-    uint16_t nextHead = (uart->TxWrite + 1) % UART_BUFFER_SIZE;
+    uint16_t nextHead = (uart->TxWrite + 1) % UART_TX_BUFFER_SIZE;
     uint32_t time_start = HAL_GetTick();
     while (nextHead == uart->TxRead && (HAL_GetTick() - time_start) < UART_TIMEOUT) {}
 
@@ -78,7 +78,7 @@ uint8_t UART_GetByte(volatile UART_Buffers_t* uart){
   uint8_t byte = '\0';
   if(UART_RxDataAvailable(uart)){
     byte = uart->RxBuffer[uart->RxRead];
-    uart->RxRead = (uart->RxRead + 1) % UART_BUFFER_SIZE;
+    uart->RxRead = (uart->RxRead + 1) % UART_RX_BUFFER_SIZE;
   }
   return byte;
 }
@@ -88,19 +88,22 @@ uint8_t UART_RxDataAvailable(volatile UART_Buffers_t* uart){
 }
 
 
-void UART_Flush(volatile UART_Buffers_t* uart){
+void UART_FlushTx(volatile UART_Buffers_t* uart){
   while(uart->TxBusy) {}
     uart->TxWrite = 0;
     uart->TxRead = 0;
     uart->TxBusy = 0;
+    memset(uart->TxBuffer, 0, UART_TX_BUFFER_SIZE);
+}
+
+void UART_FlushRx(volatile UART_Buffers_t* uart){
+   while(uart->TxBusy){}
     uart->RxWrite = 0;
     uart->RxRead = 0;
     uart->RxByte = 0;
-    memset(uart->TxBuffer, 0, UART_BUFFER_SIZE);
-    memset(uart->RxBuffer, 0, UART_BUFFER_SIZE);
+    memset(uart->RxBuffer, 0, UART_RX_BUFFER_SIZE);
     HAL_UART_Receive_IT(uart->huart, &uart->RxByte, 1);
 }
-
 
 
 
@@ -113,7 +116,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
         uart = &UART6_Buffer;
     }
     if(uart){
-      uint16_t nextHead = (uart->RxWrite + 1) % UART_BUFFER_SIZE;
+      uint16_t nextHead = (uart->RxWrite + 1) % UART_RX_BUFFER_SIZE;
       if(nextHead != uart->RxRead){ 
         uart->RxBuffer[uart->RxWrite] = uart->RxByte;
         uart->RxWrite = nextHead;
@@ -133,7 +136,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
         uart = &UART6_Buffer;
     }
     if(uart){
-      uart->TxRead = (uart->TxRead + 1) % UART_BUFFER_SIZE;
+      uart->TxRead = (uart->TxRead + 1) % UART_TX_BUFFER_SIZE;
       if(uart->TxWrite != uart->TxRead){
         HAL_UART_Transmit_IT(uart->huart,(uint8_t*)&uart->TxBuffer[uart->TxRead],1);
       } else {

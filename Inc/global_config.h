@@ -11,4 +11,4 @@ typedef enum {
     DEBUG_VERBOSE 
 } DEBUG_LEVEL_t;
 
-#endif // GLOBAL_CONFIG_H
+#endif // GLOBAL_CONFIG_H\
