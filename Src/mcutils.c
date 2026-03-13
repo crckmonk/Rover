@@ -1,13 +1,6 @@
 #include "mcutils.h"
 
 
-extern UART_HandleTypeDef huart1;
-
-/*
-TODO: Replace with proper printf implementation 
-*/
-
-
 void I2C_Scan(I2C_HandleTypeDef *hi2c){
   uint8_t StartMSG[] = "Starting I2C Scanning: \r\n";
   uint8_t EndMSG[] = "Done! \r\n\r\n";

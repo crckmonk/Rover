@@ -38,6 +38,7 @@ uint8_t Rover_Disarm(){
 }
 
 uint8_t Rover_Arm(){
+    /* TODO: Add some indication if armed (LED)*/
     RoverState.mode |= MAV_MODE_FLAG_SAFETY_ARMED;
     return RoverState.mode;
 }

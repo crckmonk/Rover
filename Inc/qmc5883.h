@@ -34,8 +34,7 @@
  */
 
  /*
-	TODO:
-		- Calibration Function
+	TODO: Calibration Function
 		
  */
 
