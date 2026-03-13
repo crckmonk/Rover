@@ -6,6 +6,8 @@
 #include "stm32f4xx.h"
 #include "common/mavlink.h"
 #include "mcutils.h"
+#include "motor.h"
+
 
 typedef struct  command_packet{
     /**/
@@ -24,6 +26,8 @@ typedef struct Rover_t{
     MAV_MODE mode;
     MAV_STATE status;
     uint32_t last_control_time;
+    uint8_t control_pending;
+    motor_Direction_t direction;
     uint8_t left_motor;
     uint8_t right_motor;
 } Rover_t;
@@ -49,4 +53,8 @@ uint32_t Rover_GetId();
 
 MAV_MODE Rover_GetMode();
 
-void Rover_ApplyManualControl(mavlink_manual_control_t* control_msg);
+uint8_t Rover_ControlPending();
+
+uint8_t Rover_SetControlPending(uint8_t value);
+
+void Rover_ProcessManualCtrl(mavlink_manual_control_t *control_msg);

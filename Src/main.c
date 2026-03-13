@@ -89,72 +89,19 @@ float heading = 0.0f;
 volatile uint8_t send_heartbeat = 0;
 volatile uint8_t tele_timer =0;
 
-static void JSON_CommandParse(uint8_t *jsonStr, command_packet *cmdPacket) {
-  // yyjson_doc *doc = yyjson_read(jsonStr, strlen(jsonStr), 0);
-  // if (!doc) {
-  //   printf("Error parsing JSON\n");
-  //   return;
-  // }
-  // yyjson_val *root = yyjson_doc_get_root(doc);
-  // yyjson_val *id = yyjson_obj_get(root, "id");
-  // yyjson_val *type = yyjson_obj_get(root, "type");
-
-  // DEBUG_PRINTF(DEBUG_INFO, "Received JSON command: %s\r\n", jsonStr);
-
-  // if (strncmp(yyjson_get_str(type), "JOYSTICK", 8) == 0) {
-
-  //   if (strncmp(yyjson_get_str(id), "throttle", 8) == 0) {
-  //     yyjson_val *yVal = yyjson_obj_get(root, "y");
-  //     float raw_val = yyjson_get_num(yVal);
-  //     DEBUG_PRINTF(DEBUG_INFO, "Throttle raw value: %.3f\r\n", raw_val);
-  //     if(raw_val > 0){
-  //       uint16_t speed = (uint16_t)(raw_val * 100);
-  //       cmdPacket->direction = FORWARD;
-  //       cmdPacket->left_motors_speed = speed;
-  //       cmdPacket->right_motors_speed = speed;
-  //     } else if(raw_val < 0){
-  //       uint16_t speed = (uint16_t)(-raw_val * 100);
-  //       cmdPacket->direction = REVERSE;
-  //       cmdPacket->left_motors_speed = speed;
-  //       cmdPacket->right_motors_speed = speed;
-  //     } else {
-  //       cmdPacket->direction = STOP;
-  //       cmdPacket->left_motors_speed = 0;
-  //       cmdPacket->right_motors_speed = 0;
-  //     }
-  //   } else if (strncmp(yyjson_get_str(id), "steer", 5) == 0) {
-  //     yyjson_val *xVal = yyjson_obj_get(root, "x");
-  //     float raw_val = yyjson_get_num(xVal);
-  //     DEBUG_PRINTF(DEBUG_INFO, "Steer raw value: %.3f\r\n", raw_val);
-  //     if ( raw_val > 0){
-  //       uint16_t speed = (uint16_t)(raw_val * 100);
-  //       cmdPacket->left_motors_speed = cmdPacket->left_motors_speed + speed >
-  //       100 ? 100 : cmdPacket->left_motors_speed + speed;
-  //       cmdPacket->right_motors_speed = cmdPacket->right_motors_speed > speed
-  //       ? cmdPacket->right_motors_speed - speed : 0;
-  //     } else if(raw_val < 0){
-  //       uint16_t speed = (uint16_t)(-raw_val * 100);
-  //       cmdPacket->right_motors_speed = cmdPacket->right_motors_speed + speed
-  //       > 100 ? 100 : cmdPacket->right_motors_speed + speed;
-  //       cmdPacket->left_motors_speed = cmdPacket->left_motors_speed > speed ?
-  //       cmdPacket->left_motors_speed - speed : 0;
-  //     }
-  //   }
-  // }
-}
 
 static void executeCommand(command_packet *cmd) {
   switch (cmd->direction) {
   case FORWARD: // GO
-    motor_SetSpeed(&htim2, LEFT, FORWARD, cmd->left_motors_speed);
-    motor_SetSpeed(&htim2, RIGHT, FORWARD, cmd->right_motors_speed);
+    motor_SetSpeed(LEFT, FORWARD, cmd->left_motors_speed);
+    motor_SetSpeed(RIGHT, FORWARD, cmd->right_motors_speed);
     break;
   case BRAKE: // STOP
-    motor_SetSpeed(&htim2, BOTH, BRAKE, STOP);
+    motor_SetSpeed(BOTH, BRAKE, STOP);
     break;
   case REVERSE: // RVS
-    motor_SetSpeed(&htim2, LEFT, REVERSE, cmd->left_motors_speed);
-    motor_SetSpeed(&htim2, RIGHT, REVERSE, cmd->right_motors_speed);
+    motor_SetSpeed(LEFT, REVERSE, cmd->left_motors_speed);
+    motor_SetSpeed(RIGHT, REVERSE, cmd->right_motors_speed);
     break;
   }
 }
