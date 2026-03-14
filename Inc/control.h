@@ -58,3 +58,5 @@ uint8_t Rover_ControlPending();
 uint8_t Rover_SetControlPending(uint8_t value);
 
 void Rover_ProcessManualCtrl(mavlink_manual_control_t *control_msg);
+
+void Rover_ApplyControlState();

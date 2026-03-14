@@ -157,6 +157,6 @@ finally:
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
             0, 0.0, 0, 0, 0, 0, 0, 0
         )
-        time.sleep(0.5)
+        time.sleep(0.05)
     listener.stop()
     print("Done")
