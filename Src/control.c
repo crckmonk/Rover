@@ -66,8 +66,8 @@ void Rover_ProcessManualCtrl(mavlink_manual_control_t *control_msg){
         uint16_t throttle_base,throttle_left, throttle_right;
         RoverState.direction = control_msg->x >=0 ? control_msg->x > 0 ?FORWARD : BRAKE : REVERSE;
         throttle_base = control_msg->x >=0 ? control_msg->x : -(control_msg->x); /* Get absolute value of x*/
-        throttle_left = (uint16_t)(throttle_base + (control_msg->y /2));
-        throttle_right = (uint16_t)(throttle_base - (control_msg->y /2));
+        throttle_left = (uint16_t)(throttle_base + (control_msg->y));
+        throttle_right = (uint16_t)(throttle_base - (control_msg->y));
         RoverState.left_motor = (uint8_t)(throttle_left <= 1000? (throttle_left / 10): 100);
         RoverState.right_motor = (uint8_t)( throttle_right <= 1000? (throttle_right / 10): 100);
         DEBUG_PRINTF(DEBUG_VERBOSE, "[ROVER] Right motor: %d\r\nLeft motor: %d\r\nDirection: %s\r\n", RoverState.left_motor, RoverState.right_motor, RoverState.direction == FORWARD? "Forward":"Reverse");
@@ -82,6 +82,7 @@ void Rover_ApplyControlState(){
     }
     switch (RoverState.direction) {
     case FORWARD: // GO
+        
         motor_SetSpeed(LEFT, FORWARD, RoverState.left_motor);
         motor_SetSpeed(RIGHT, FORWARD, RoverState.right_motor);
     break;

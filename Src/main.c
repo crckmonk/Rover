@@ -171,16 +171,22 @@ int main(void) {
   motor_Init(&htim2);
   
   ESP8266_Handler_t esp_dev;
-  esp_dev.huart = &huart6;
-  esp_dev.uart_buffers = &UART6_Buffer;
+
+
+
+  ESP8266_Init(&esp_dev, &huart6, &UART6_Buffer);
   esp_dev.ssid = (uint8_t *)"RoverAP";
   esp_dev.password = (uint8_t *)"moronik88";
+
   HAL_UART_Receive_IT(&huart6, &esp_dev.uart_buffers->RxByte, 1);
 
-  while (ESP8266_UDPSoftAP(&esp_dev) != ESP8266_OK) {
+  while (  ESP8266_UDPSoftAP(&esp_dev) != ESP8266_OK) {
     DEBUG_PRINTF(DEBUG_ERROR, "SoftAP Initialization failed, retrying...\r\n");
     HAL_Delay(1000);
   }
+
+
+
   DEBUG_PRINTF(DEBUG_INFO, "UDP SoftAP Initialized successfully\r\n");
   DEBUG_PRINTF(DEBUG_VERBOSE, "RX Buffer: %s\r\n", esp_dev.rx_buffer);
   DEBUG_PRINTF(DEBUG_INFO, "Transmitting heartbeat\r\n");
@@ -193,11 +199,14 @@ int main(void) {
       MavLink_SendHeartbeat(&esp_dev);
       send_heartbeat = 0;
     }
-    if ((__HAL_TIM_GET_COUNTER(&htim3) % 1600) == 0){
+    if ((__HAL_TIM_GET_COUNTER(&htim3) % 16000) == 0){
       ESP8266_SendTelemetry(&esp_dev);
     }
     ESP8266_MainLoop(&esp_dev);
     Rover_ApplyControlState();
+    if (Rover_GetMode() & MAV_MODE_FLAG_SAFETY_ARMED){
+      
+    }
     // if (esp_dev.uart_buffers->RxWrite != esp_dev.uart_buffers->RxRead)
     // {
     //     uint8_t ch =

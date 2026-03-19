@@ -83,11 +83,11 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 # Remove wrong libob.a library dependency when using cpp files
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 
-# Add linked libraries
+# Add linked libraries          
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
     # Add user defined libraries
-)
+)                                                                
 
 add_custom_target(flash
     COMMAND openocd -f ${CMAKE_SOURCE_DIR}/openocd.cfg -c "program ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME}.elf verify reset exit"
