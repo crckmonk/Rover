@@ -35,12 +35,14 @@ uint8_t Rover_CheckArmed(){
 
 uint8_t Rover_Disarm(){
     RoverState.mode = (RoverState.mode & ~MAV_MODE_FLAG_SAFETY_ARMED);
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
     return RoverState.mode;
 }
 
 uint8_t Rover_Arm(){
     /* TODO: Add some indication if armed (LED)*/
     RoverState.mode |= MAV_MODE_FLAG_SAFETY_ARMED;
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
     return RoverState.mode;
 }
 

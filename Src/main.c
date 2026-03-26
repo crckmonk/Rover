@@ -192,9 +192,9 @@ int main(void)
     }
     ESP8266_MainLoop(&esp_dev);
     Rover_ApplyControlState();
-    if (Rover_GetMode() & MAV_MODE_FLAG_SAFETY_ARMED){
+    // if (Rover_GetMode() & MAV_MODE_FLAG_SAFETY_ARMED){
       
-    }
+    // }
     // if (esp_dev.uart_buffers->RxWrite != esp_dev.uart_buffers->RxRead)
     // {
     //     uint8_t ch =
