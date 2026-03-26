@@ -90,22 +90,6 @@ volatile uint8_t send_heartbeat = 0;
 volatile uint8_t tele_timer =0;
 
 
-static void executeCommand(command_packet *cmd) {
-  switch (cmd->direction) {
-  case FORWARD: // GO
-    motor_SetSpeed(LEFT, FORWARD, cmd->left_motors_speed);
-    motor_SetSpeed(RIGHT, FORWARD, cmd->right_motors_speed);
-    break;
-  case BRAKE: // STOP
-    motor_SetSpeed(BOTH, BRAKE, STOP);
-    break;
-  case REVERSE: // RVS
-    motor_SetSpeed(LEFT, REVERSE, cmd->left_motors_speed);
-    motor_SetSpeed(RIGHT, REVERSE, cmd->right_motors_speed);
-    break;
-  }
-}
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   if (htim->Instance == TIM3) {
     send_heartbeat = 1;

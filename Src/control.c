@@ -15,6 +15,7 @@ void Rover_ResetState(){
     RoverState.left_motor = 0;
     RoverState.right_motor = 0;
     RoverState.status = MAV_STATE_STANDBY;
+    RoverState.last_direction = HALT;
     RoverState.last_control_time = 0;
 }
 
@@ -64,7 +65,7 @@ void Rover_ProcessManualCtrl(mavlink_manual_control_t *control_msg){
     if (RoverState.mode & MAV_MODE_FLAG_SAFETY_ARMED ){
         DEBUG_PRINTF(DEBUG_VERBOSE, "[ROVER] Processing manual control\r\n");
         uint16_t throttle_base,throttle_left, throttle_right;
-        RoverState.direction = control_msg->x >=0 ? control_msg->x > 0 ?FORWARD : BRAKE : REVERSE;
+        RoverState.direction = control_msg->x >=0 ? control_msg->x > 0 ?FORWARD : HALT : REVERSE;
         throttle_base = control_msg->x >=0 ? control_msg->x : -(control_msg->x); /* Get absolute value of x*/
         throttle_left = (uint16_t)(throttle_base + (control_msg->y));
         throttle_right = (uint16_t)(throttle_base - (control_msg->y));
@@ -77,23 +78,28 @@ void Rover_ProcessManualCtrl(mavlink_manual_control_t *control_msg){
 }
 
 void Rover_ApplyControlState(){
-    if(!RoverState.control_pending){
-        return;
-    }
-    switch (RoverState.direction) {
-    case FORWARD: // GO
-        
-        motor_SetSpeed(LEFT, FORWARD, RoverState.left_motor);
-        motor_SetSpeed(RIGHT, FORWARD, RoverState.right_motor);
-    break;
-    case REVERSE: // RVS
-        motor_SetSpeed(LEFT, REVERSE, RoverState.left_motor);
-        motor_SetSpeed(RIGHT, REVERSE, RoverState.right_motor);
-    break;
-    default:
-        motor_SetSpeed(BOTH, BRAKE, STOP);
+    if(RoverState.mode & MAV_MODE_FLAG_SAFETY_ARMED){
+        if(!RoverState.control_pending){
+            return;
+        }
+        if (RoverState.direction != RoverState.last_direction){
+            motor_SetSpeed(BOTH, HALT, STOP);
+            RoverState.last_direction = RoverState.direction;
+        }
+        switch (RoverState.direction) {
+        case FORWARD: // GO
+            motor_SetSpeed(LEFT, FORWARD, RoverState.left_motor);
+            motor_SetSpeed(RIGHT, FORWARD, RoverState.right_motor);
+        break;
+        case REVERSE: // RVS
+            motor_SetSpeed(LEFT, REVERSE, RoverState.left_motor);
+            motor_SetSpeed(RIGHT, REVERSE, RoverState.right_motor);
+        break;
+        default:
+            motor_SetSpeed(BOTH, HALT, STOP);
 
+    }
+    RoverState.control_pending = 0;
+    RoverState.last_control_time = HAL_GetTick();
   }
-  RoverState.control_pending = 0;
-  RoverState.last_control_time = HAL_GetTick();
 }

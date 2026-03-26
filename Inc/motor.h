@@ -18,7 +18,7 @@ typedef enum  {
 } speed_e;
 
 typedef enum  {
-    BRAKE = 0,
+    HALT = 0,
     FORWARD,
     REVERSE
 } motor_Direction_t;

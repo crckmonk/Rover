@@ -28,6 +28,7 @@ typedef struct Rover_t{
     uint32_t last_control_time;
     uint8_t control_pending;
     motor_Direction_t direction;
+    motor_Direction_t last_direction;
     uint8_t left_motor;
     uint8_t right_motor;
 } Rover_t;

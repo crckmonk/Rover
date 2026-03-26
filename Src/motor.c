@@ -48,7 +48,7 @@ void motor_SetSpeed(side_e side, motor_Direction_t dir, uint8_t speed)
 }
 
 void motor_FullStop(){
-  motor_SetSpeed(BOTH, BRAKE, STOP);
+  motor_SetSpeed(BOTH, HALT, STOP);
 }
 
 

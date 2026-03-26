@@ -15,9 +15,9 @@
   * If no LICENSE file comes with this software, it is provided AS-IS.
   *
   ******************************************************************************
- * TODO: Add RX/TX buffers and interrupt handlers for USART1 and USART6
-USER CODE END Header
-Includes ------------------------------------------------------------------*/
+  */
+/* USER CODE END Header */
+/* Includes ------------------------------------------------------------------*/
 #include "usart.h"
 
 /* USER CODE BEGIN 0 */
@@ -320,3 +320,4 @@ void _putchar(char character)
     UART_SendByte(&UART1_Buffer, (uint8_t)character);
 }
 /* USER CODE END 1 */
+
