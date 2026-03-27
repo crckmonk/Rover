@@ -25,6 +25,7 @@ typedef struct Rover_t{
     uint32_t SYSTEM_ID;
     MAV_MODE mode;
     MAV_STATE status;
+    uint16_t vbat;
     uint32_t last_control_time;
     uint8_t control_pending;
     motor_Direction_t direction;
@@ -57,6 +58,10 @@ MAV_MODE Rover_GetMode();
 uint8_t Rover_ControlPending();
 
 uint8_t Rover_SetControlPending(uint8_t value);
+
+uint16_t Rover_SetVBat(uint16_t vbat);
+
+uint16_t Rover_GetVBat();
 
 void Rover_ProcessManualCtrl(mavlink_manual_control_t *control_msg);
 

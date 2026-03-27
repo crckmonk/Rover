@@ -97,7 +97,6 @@ void UART_FlushTx(volatile UART_Buffers_t* uart){
 }
 
 void UART_FlushRx(volatile UART_Buffers_t* uart){
-   while(uart->TxBusy){}
     uart->RxWrite = 0;
     uart->RxRead = 0;
     uart->RxByte = 0;
@@ -123,6 +122,26 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
       }
       HAL_UART_Receive_IT(uart->huart, &uart->RxByte, 1);
   }
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+    volatile UART_Buffers_t* uart = NULL;
+    if (huart->Instance == USART1) {
+        uart = &UART1_Buffer;
+    } else if (huart->Instance == USART6) {
+        uart = &UART6_Buffer;
+    }
+    if (uart) {
+        // Clear all error flags
+        __HAL_UART_CLEAR_OREFLAG(huart);
+        __HAL_UART_CLEAR_NEFLAG(huart);
+        __HAL_UART_CLEAR_FEFLAG(huart);
+        __HAL_UART_CLEAR_PEFLAG(huart);
+
+        HAL_UART_AbortReceive(uart->huart);
+        HAL_UART_Receive_IT(uart->huart, (uint8_t*)&uart->RxByte, 1);
+    }
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)

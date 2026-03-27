@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "adc.h"
 #include "i2c.h"
 #include "spi.h"
 #include "tim.h"
@@ -86,14 +85,30 @@ LSM303_RawData_t mag_horizontal = {0};
 LSM303_RawData_t magData_cal = {0};
 LSM303_RawData_t accData_cal = {0};
 float heading = 0.0f;
-volatile uint8_t send_heartbeat = 0;
-volatile uint8_t tele_timer =0;
 
+uint16_t adc_vbat_raw = 0;
+volatile uint8_t send_heartbeat = 0;
+
+
+uint16_t readADC(void)
+{
+  // HAL_ADC_Start(&hadc1);  // Start ADC conversion
+  
+  // Wait for conversion to complete
+  // if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)
+  {
+    // return HAL_ADC_GetValue(&hadc1);  // Return the conversion result
+  }
+  
+  return 0;  // Return 0 if conversion failed
+}
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   if (htim->Instance == TIM3) {
     send_heartbeat = 1;
-    tele_timer = tele_timer < 3? tele_timer+=1:0;
+   // adc_vbat_raw = Rover_SetVBat(readADC());
+    //DEBUG_PRINTF(DEBUG_INFO, "BATT: %d\r\n",adc_vbat_raw);
+
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
   }
 }
@@ -125,7 +140,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  HAL_Delay(100);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -136,7 +151,6 @@ int main(void)
   MX_SPI1_Init();
   MX_USART6_UART_Init();
   MX_TIM3_Init();
-  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
  // LSM303_AccInit_t lsm303dlhc_acc_init = {0};
   // LSM303_MagInit_t lsm303dlhc_mag_init = {0};
@@ -167,7 +181,9 @@ int main(void)
 
   while (  ESP8266_UDPSoftAP(&esp_dev) != ESP8266_OK) {
     DEBUG_PRINTF(DEBUG_ERROR, "SoftAP Initialization failed, retrying...\r\n");
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
     HAL_Delay(1000);
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
   }
 
 
@@ -176,19 +192,20 @@ int main(void)
   DEBUG_PRINTF(DEBUG_VERBOSE, "RX Buffer: %s\r\n", esp_dev.rx_buffer);
   DEBUG_PRINTF(DEBUG_INFO, "Transmitting heartbeat\r\n");
   HAL_TIM_Base_Start_IT(&htim3);
+  // HAL_ADC_Start_IT(&hadc1);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  
   while (1)
-  {
+  { 
     ESP8266_MainLoop(&esp_dev);
     if (send_heartbeat) {
       MavLink_SendHeartbeat(&esp_dev);
-      send_heartbeat = 0;
-    }
-    if ((__HAL_TIM_GET_COUNTER(&htim3) % 16000) == 0){
       ESP8266_SendTelemetry(&esp_dev);
+      send_heartbeat = 0;
     }
     ESP8266_MainLoop(&esp_dev);
     Rover_ApplyControlState();
@@ -272,13 +289,12 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 72;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 25;
+  RCC_OscInitStruct.PLL.PLLN = 144;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -295,7 +311,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
   {
     Error_Handler();
   }

@@ -7,6 +7,7 @@ static Rover_t RoverState = {
     .status = MAV_STATE_STANDBY,
     .left_motor = 0,
     .right_motor = 0,
+    .vbat = 0
 };
 
 
@@ -60,6 +61,15 @@ uint8_t Rover_ControlPending(){
 
 uint8_t Rover_SetControlPending(uint8_t value){
     RoverState.control_pending = value>0?1:0;
+}
+
+uint16_t Rover_SetVBat(uint16_t vbat){
+    RoverState.vbat = vbat;
+    return RoverState.vbat;
+}
+
+uint16_t Rover_GetVBat(){
+    return RoverState.vbat;
 }
 
 void Rover_ProcessManualCtrl(mavlink_manual_control_t *control_msg){
