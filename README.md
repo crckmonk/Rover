@@ -21,3 +21,5 @@
  - FPV video transmission 
  - Onboard peripherals controlled remotely(Lights, camera mount turning, ...)
 
+<img width="960" height="1280" alt="image" src="https://github.com/user-attachments/assets/1db315db-4fba-4ee6-adb2-d2c59f2d25b4" />
+<img width="675" height="786" alt="image" src="https://github.com/user-attachments/assets/0cdfe4c4-4d2a-4c6e-b0d3-d8a9153d40a5" />
