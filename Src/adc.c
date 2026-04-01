@@ -61,7 +61,7 @@ void MX_ADC1_Init(void)
 
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_VBAT;
+  sConfig.Channel = ADC_CHANNEL_9;
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -77,6 +77,7 @@ void MX_ADC1_Init(void)
 void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
 {
 
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
   if(adcHandle->Instance==ADC1)
   {
   /* USER CODE BEGIN ADC1_MspInit 0 */
@@ -84,6 +85,16 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* adcHandle)
   /* USER CODE END ADC1_MspInit 0 */
     /* ADC1 clock enable */
     __HAL_RCC_ADC1_CLK_ENABLE();
+
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    /**ADC1 GPIO Configuration
+    PB1     ------> ADC1_IN9
+    */
+    GPIO_InitStruct.Pin = GPIO_PIN_1;
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   /* USER CODE BEGIN ADC1_MspInit 1 */
 
   /* USER CODE END ADC1_MspInit 1 */
@@ -100,6 +111,12 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
   /* USER CODE END ADC1_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_ADC1_CLK_DISABLE();
+
+    /**ADC1 GPIO Configuration
+    PB1     ------> ADC1_IN9
+    */
+    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_1);
+
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
 
   /* USER CODE END ADC1_MspDeInit 1 */

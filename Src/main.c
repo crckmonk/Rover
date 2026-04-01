@@ -90,31 +90,29 @@ float heading = 0.0f;
 uint16_t adc_vbat_raw = 0;
 volatile uint8_t send_heartbeat = 0;
 
-
-uint16_t readADC(void)
-{
-  // HAL_ADC_Start(&hadc1);  // Start ADC conversion
-  
-  // Wait for conversion to complete
-  // if (HAL_ADC_PollForConversion(&hadc1, 100) == HAL_OK)
-  {
-    // return HAL_ADC_GetValue(&hadc1);  // Return the conversion result
-  }
-  
-  return 0;  // Return 0 if conversion failed
-}
-
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   if (htim->Instance == TIM3) {
     send_heartbeat = 1;
-   // adc_vbat_raw = Rover_SetVBat(readADC());
-    //DEBUG_PRINTF(DEBUG_INFO, "BATT: %d\r\n",adc_vbat_raw);
-
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
   }
 }
+uint16_t readBatt(void)
+{
+  uint16_t adcValue;
+  uint32_t voltage_mV;
+  
+  HAL_ADC_Start(&hadc1);
+  HAL_ADC_PollForConversion(&hadc1, 100);
+  adcValue = HAL_ADC_GetValue(&hadc1);
+  HAL_ADC_Stop(&hadc1);
 
 
+  // Multiplier = 1 240 000 / 240 000 = 5.1
+  
+  voltage_mV = (uint32_t)adcValue * 3300 * 31 / 4096 / 6;
+  
+  return (uint16_t)voltage_mV;
+}
 /* USER CODE END 0 */
 
 /**
@@ -205,6 +203,7 @@ int main(void)
   { 
     ESP8266_MainLoop(&esp_dev);
     if (send_heartbeat) {
+      DEBUG_PRINTF(DEBUG_INFO, "Battery voltage is: %d mV\r\n", readBatt());
       MavLink_SendHeartbeat(&esp_dev);
       ESP8266_SendTelemetry(&esp_dev);
       send_heartbeat = 0;
