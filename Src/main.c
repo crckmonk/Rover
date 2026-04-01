@@ -203,8 +203,10 @@ int main(void)
   { 
     ESP8266_MainLoop(&esp_dev);
     if (send_heartbeat) {
-      DEBUG_PRINTF(DEBUG_INFO, "Battery voltage is: %d mV\r\n", readBatt());
+      Rover_SetVBat(readBatt());
+      DEBUG_PRINTF(DEBUG_INFO, "Battery voltage is: %d mV\r\n", Rover_GetVBat());
       MavLink_SendHeartbeat(&esp_dev);
+      HAL_Delay(50);
       ESP8266_SendTelemetry(&esp_dev);
       send_heartbeat = 0;
     }
