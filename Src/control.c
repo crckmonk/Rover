@@ -36,14 +36,14 @@ uint8_t Rover_CheckArmed(){
 
 uint8_t Rover_Disarm(){
     RoverState.mode = (RoverState.mode & ~MAV_MODE_FLAG_SAFETY_ARMED);
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
     return RoverState.mode;
 }
 
 uint8_t Rover_Arm(){
     /* TODO: Add some indication if armed (LED)*/
     RoverState.mode |= MAV_MODE_FLAG_SAFETY_ARMED;
-    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
     return RoverState.mode;
 }
 
@@ -77,13 +77,20 @@ void Rover_ProcessManualCtrl(mavlink_manual_control_t *control_msg){
     if (RoverState.mode & MAV_MODE_FLAG_SAFETY_ARMED ){
         DEBUG_PRINTF(DEBUG_VERBOSE, "[ROVER] Processing manual control\r\n");
         uint16_t throttle_base,throttle_left, throttle_right;
+        /* TODO: Figure out better steering algorithm*/
         RoverState.direction = control_msg->x >=0 ? control_msg->x > 0 ?FORWARD : HALT : REVERSE;
+        RoverState.direction_left = control_msg->y > 0 ?  FORWARD : REVERSE;
+        RoverState.direction_right = control_msg->y < 0 ?  FORWARD : REVERSE;
         throttle_base = control_msg->x >=0 ? control_msg->x : -(control_msg->x); /* Get absolute value of x*/
-        throttle_left = (uint16_t)(throttle_base + (control_msg->y));
-        throttle_right = (uint16_t)(throttle_base - (control_msg->y));
+        // throttle_left = (uint16_t)(throttle_base + (control_msg->y));
+        // throttle_right = (uint16_t)(throttle_base - (control_msg->y));
+        throttle_left = (uint16_t)throttle_base;
+        throttle_right = (uint16_t)throttle_base;
+
+
         RoverState.left_motor = (uint8_t)(throttle_left <= 1000? (throttle_left / 10): 100);
         RoverState.right_motor = (uint8_t)( throttle_right <= 1000? (throttle_right / 10): 100);
-        DEBUG_PRINTF(DEBUG_VERBOSE, "[ROVER] Right motor: %d\r\nLeft motor: %d\r\nDirection: %s\r\n", RoverState.left_motor, RoverState.right_motor, RoverState.direction == FORWARD? "Forward":"Reverse");
+        DEBUG_PRINTF(DEBUG_INFO, "[ROVER] Right motor: %d\r\nLeft motor: %d\r\nDirection: %s\r\nDirection left: %s\r\nDirection right %s\r\n ", RoverState.left_motor, RoverState.right_motor, RoverState.direction == FORWARD ? "Forward": RoverState.direction == REVERSE ? "Reverse": "Halt", RoverState.direction_left == FORWARD? "Forward":"Halt", RoverState.direction_right == FORWARD? "Forward":"Halt");
 
         RoverState.control_pending = 1;
     }
@@ -98,19 +105,12 @@ void Rover_ApplyControlState(){
             motor_SetSpeed(BOTH, HALT, STOP);
             RoverState.last_direction = RoverState.direction;
         }
-        switch (RoverState.direction) {
-        case FORWARD: // GO
-            motor_SetSpeed(LEFT, FORWARD, RoverState.left_motor);
-            motor_SetSpeed(RIGHT, FORWARD, RoverState.right_motor);
-        break;
-        case REVERSE: // RVS
-            motor_SetSpeed(LEFT, REVERSE, RoverState.left_motor);
-            motor_SetSpeed(RIGHT, REVERSE, RoverState.right_motor);
-        break;
-        default:
-            motor_SetSpeed(BOTH, HALT, STOP);
-
-    }
+        if (RoverState.direction_left != RoverState.direction_right){
+            motor_SetSpeed(LEFT, RoverState.direction_left, RoverState.left_motor);
+            motor_SetSpeed(RIGHT, RoverState.direction_right, RoverState.right_motor);
+        } else {
+            motor_SetSpeed(BOTH, RoverState.direction, RoverState.left_motor);
+        }
     RoverState.control_pending = 0;
     RoverState.last_control_time = HAL_GetTick();
   }
