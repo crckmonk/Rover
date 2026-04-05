@@ -1,8 +1,9 @@
 #include "motor.h"
+#include "mcutils.h"
 
 static TIM_HandleTypeDef *motor_timer;
 
-void motor_Init(TIM_HandleTypeDef *htim)
+void Motor_Init(TIM_HandleTypeDef *htim)
 {
   motor_timer = htim;
     HAL_TIM_PWM_Start(motor_timer, LEFT_FORWARD);
@@ -15,14 +16,19 @@ void motor_Init(TIM_HandleTypeDef *htim)
   __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_REVERSE, 0);  
 }
 
-void motor_SetSpeed(side_e side, motor_Direction_t dir, uint8_t speed)
+void Motor_SetSpeed(side_e side, motor_Direction_t dir, uint8_t speed)
 {
+  if(speed > 100){
+    speed = 100;
+  }
   if (side == LEFT || side == BOTH){
     switch(dir){
       case FORWARD:
+        __HAL_TIM_SET_COMPARE(motor_timer, LEFT_REVERSE, STOP);  
         __HAL_TIM_SET_COMPARE(motor_timer, LEFT_FORWARD, speed);
         break;
       case REVERSE: 
+        __HAL_TIM_SET_COMPARE(motor_timer, LEFT_FORWARD, STOP);  
         __HAL_TIM_SET_COMPARE(motor_timer, LEFT_REVERSE, speed);
         break;
       default:
@@ -34,9 +40,11 @@ void motor_SetSpeed(side_e side, motor_Direction_t dir, uint8_t speed)
   if (side == RIGHT || side == BOTH){
     switch(dir){
       case FORWARD:
+        __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_REVERSE, STOP); 
         __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_FORWARD, speed);
         break;
       case REVERSE: 
+        __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_FORWARD, STOP);  
         __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_REVERSE, speed);
         break;
       default:
@@ -47,22 +55,48 @@ void motor_SetSpeed(side_e side, motor_Direction_t dir, uint8_t speed)
   }
 }
 
-void motor_FullStop(){
-  motor_SetSpeed(BOTH, HALT, STOP);
+void Motor_FullStop(){
+  Motor_SetSpeed(BOTH, HALT, STOP);
 }
 
 
 
 
 void Test_Speed_Settings(motor_Direction_t dir){
-    motor_SetSpeed(BOTH, dir , DEAD_SLOW);
+    Motor_SetSpeed(BOTH, dir , DEAD_SLOW);
   HAL_Delay(1000);
-  motor_SetSpeed(BOTH, dir, SLOW);
+  Motor_SetSpeed(BOTH, dir, SLOW);
   HAL_Delay(1000);
-  motor_SetSpeed(BOTH, dir, HALF);
+  Motor_SetSpeed(BOTH, dir, HALF);
   HAL_Delay(1000);
-  motor_SetSpeed(BOTH, dir, FULL);
+  Motor_SetSpeed(BOTH, dir, FULL);
   HAL_Delay(1000);
-  motor_SetSpeed(BOTH, dir, STOP);
+  Motor_SetSpeed(BOTH, dir, STOP);
   HAL_Delay(1000);
+}
+
+void Motor_TestChannels(void){
+    // Test each channel at 50% for 2 seconds
+    DEBUG_PRINTF(DEBUG_INFO, "Testing LEFT_FORWARD\r\n");
+    __HAL_TIM_SET_COMPARE(motor_timer, LEFT_FORWARD, 50);
+    HAL_Delay(2000);
+    __HAL_TIM_SET_COMPARE(motor_timer, LEFT_FORWARD, 0);
+    HAL_Delay(500);
+
+    DEBUG_PRINTF(DEBUG_INFO, "Testing LEFT_REVERSE\r\n");
+    __HAL_TIM_SET_COMPARE(motor_timer, LEFT_REVERSE, 50);
+    HAL_Delay(2000);
+    __HAL_TIM_SET_COMPARE(motor_timer, LEFT_REVERSE, 0);
+    HAL_Delay(500);
+
+    DEBUG_PRINTF(DEBUG_INFO, "Testing RIGHT_FORWARD\r\n");
+    __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_FORWARD, 50);
+    HAL_Delay(2000);
+    __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_FORWARD, 0);
+    HAL_Delay(500);
+
+    DEBUG_PRINTF(DEBUG_INFO, "Testing RIGHT_REVERSE\r\n");
+    __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_REVERSE, 50);
+    HAL_Delay(2000);
+    __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_REVERSE, 0);
 }

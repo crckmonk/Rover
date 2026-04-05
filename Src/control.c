@@ -99,25 +99,28 @@ void Rover_ProcessManualCtrl(mavlink_manual_control_t *control_msg){
 }
 
 void Rover_ApplyControlState(){
-    if(RoverState.mode & MAV_MODE_FLAG_SAFETY_ARMED){
+    if(RoverState.mode & MAV_MODE_FLAG_SAFETY_ARMED){ 
         if(!RoverState.control_pending){
             return;
         }
         if (RoverState.direction != RoverState.last_direction){
-            motor_SetSpeed(BOTH, HALT, STOP);
+            Motor_SetSpeed(BOTH, HALT, STOP);
             RoverState.last_direction = RoverState.direction;
         } 
         if (RoverState.direction_left != RoverState.direction_right){
-            motor_SetSpeed(BOTH, HALT, STOP);
-            motor_SetSpeed(LEFT, RoverState.direction_left, RoverState.left_motor);
-            motor_SetSpeed(RIGHT, RoverState.direction_right, RoverState.right_motor);
-            RoverState.turning = 1;
+            if (!RoverState.turning){
+                Motor_SetSpeed(BOTH, HALT, STOP);
+                RoverState.turning = 1;
+            }
+            Motor_SetSpeed(LEFT, RoverState.direction_left, RoverState.left_motor);
+            Motor_SetSpeed(RIGHT, RoverState.direction_right, RoverState.right_motor);
+            
         } else { 
             if (RoverState.turning){
-                motor_SetSpeed(BOTH, HALT, STOP);
+                Motor_SetSpeed(BOTH, HALT, STOP);
                 RoverState.turning = 0;
             }
-            motor_SetSpeed(BOTH, RoverState.direction, RoverState.left_motor);
+            Motor_SetSpeed(BOTH, RoverState.direction, RoverState.left_motor);
 
         }
     RoverState.control_pending = 0;
