@@ -28,21 +28,49 @@ static const char* ESP_StatusToString(ESP_Status_t status) {
 }
 
 
+/* * PARAMETER DUMMY */
+
+typedef struct {
+    char     name[17];
+    float    value;
+    uint8_t  type;      
+} RoverParam_t;
+
+static RoverParam_t params[] = {
+    {"SYSID_THISMAV", 1.0f, MAV_PARAM_TYPE_INT32},
+};
+
+
+#define PARAM_COUNT (sizeof(params) / sizeof(params[0]))
+
+void MAVLink_SendParamValue(uint16_t index) {
+    if (index >= PARAM_COUNT) return;
+
+    mavlink_message_t msg;
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+
+    mavlink_msg_param_value_pack(
+        Rover_GetId(), MAV_COMP_ID_AUTOPILOT1, &msg,
+        params[index].name,   // param_id (char[16])
+        params[index].value,  // param_value (float)
+        params[index].type,   // param_type
+        PARAM_COUNT,          // param_count — total number
+        index                 // param_index — this one's index
+    );
+
+    uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
+    ESP_QueueMAVLink(&tx_queue, buf, len);
+}
+
+
 #define ESP_CMD(dev, cmd, timeout, step_name) do { \
     DEBUG_PRINTF(DBG_VERBOSE,"[ESP] Step: %s\r\n", step_name); \
-    ESP_Status_t _status = ESP_SendCommand(dev, cmd, timeout); \
+    ESP_Status_t _status = ESP_SendATCommand(dev, cmd, timeout); \
     if (_status != ESP_OK) { \
         DEBUG_PRINTF(DBG_VERBOSE,"[ESP] FAILED at '%s': %s\r\n", step_name, ESP_StatusToString(_status)); \
         return ESP_ERROR; \
     } \
 } while(0)
-
-
-
-/* * TEMPORARY TX MESSAGE QUEUEING
-   TODO: Refactor and organize to fit the driver structure; Move queue typedefs and fuctions to a separate module; Since only MavLink messages are handled in a queue it shouldn't be a part of esp_dev but integrated in a separate mavlink handling library
-
-*/
 
 
 static Queue_t tx_queue = {0};
@@ -59,7 +87,7 @@ static ESP_Status_t ESP_SendMAVLink(ESP_Handler_t *dev, uint8_t *data, uint32_t 
     uint8_t cmd[32];
     snprintf((char*)cmd, sizeof(cmd), "AT+CIPSEND=%d", (int)len);
     
-    if (ESP_SendCommand(dev, cmd, 200) != ESP_OK) {
+    if (ESP_SendATCommand(dev, cmd, 200) != ESP_OK) {
         DEBUG_PRINTF(DBG_ERROR, "[ESP] CIPSEND failed\r\n");
         return ESP_ERROR;
     }
@@ -96,9 +124,6 @@ static ESP_Status_t ESP_ProcessTxQueue(ESP_Handler_t *dev) {
 }
 
 
-/* * END OF TEMPORARY CODE*/
-
-
 ESP_Status_t ESP_SendString(ESP_Handler_t* dev, const uint8_t* str){
     UART_SendData(dev->uart_buffers, (uint8_t*)str, strlen(str));
     return ESP_OK;
@@ -133,7 +158,7 @@ void ESP_Init(ESP_Handler_t* dev,
  * @param timeout 
  * @return 
  */
-ESP_Status_t ESP_SendCommand(ESP_Handler_t *dev, const uint8_t* cmd, uint32_t timeout) {
+ESP_Status_t ESP_SendATCommand(ESP_Handler_t *dev, const uint8_t* cmd, uint32_t timeout) {
     dev->response_received = 0;
     dev->response_status = ESP_TIMEOUT;
     dev->rx_index = 0;
@@ -176,8 +201,39 @@ ESP_Status_t ESP_SendCommand(ESP_Handler_t *dev, const uint8_t* cmd, uint32_t ti
 }
 
 
+void MAVLink_SendAutopilotVersion(void) {
+    mavlink_message_t msg;
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
 
-static void MAVLink_SendCmdAck(ESP_Handler_t *dev, uint16_t command, uint8_t result) {
+    uint64_t capabilities =
+        MAV_PROTOCOL_CAPABILITY_MAVLINK2 |
+        MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+        MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED;
+
+    mavlink_msg_autopilot_version_pack(
+        Rover_GetId(),
+        MAV_COMP_ID_AUTOPILOT1,
+        &msg,
+        capabilities,   // capabilities bitmask
+        1,              // flight_sw_version
+        0,              // middleware_sw_version
+        0,              // os_sw_version
+        0,              // board_version
+        NULL,           // flight_custom_version (8 bytes, NULL = zeros)
+        NULL,           // middleware_custom_version
+        NULL,           // os_custom_version
+        0,              // vendor_id
+        0,              // product_id
+        0,               // uid
+        0               // uid2
+    );
+
+    uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
+    ESP_QueueMAVLink(&tx_queue, buf, len);
+}
+
+
+static void MAVLink_SendCmdAck(uint16_t command, uint8_t result) {
     mavlink_message_t msg;
     uint8_t buf[MAVLINK_MAX_PACKET_LEN];
     
@@ -207,7 +263,24 @@ static void handle_command_long(ESP_Handler_t *dev, mavlink_message_t* msg) {
     uint8_t result = MAV_RESULT_FAILED;
     switch(cmd.command) {
         case MAV_CMD_REQUEST_MESSAGE: {
+                uint32_t msg_id = (uint32_t)cmd.param1;
                 DEBUG_PRINTF(DBG_INFO, "[ESP] [MAV] Message requested: %d\r\n", cmd.param1);
+                switch(msg_id){
+                    case 148: // AUTOPILOT_VERSION
+                        MAVLink_SendCmdAck(cmd.command, MAV_RESULT_ACCEPTED);
+                        MAVLink_SendAutopilotVersion();
+                        break;
+                    case 300: // PROTOCOL_VERSION
+                        MAVLink_SendCmdAck(cmd.command, MAV_RESULT_ACCEPTED);
+                        //SendProtocolVersion
+                        break;
+                    case 259: 
+                            MAVLink_SendCmdAck(cmd.command, MAV_RESULT_UNSUPPORTED);
+                            break;
+                    default:
+                        MAVLink_SendCmdAck(cmd.command, MAV_RESULT_UNSUPPORTED);
+                        break;
+                }
         }
         case MAV_CMD_COMPONENT_ARM_DISARM: {
                 DEBUG_PRINTF(DBG_INFO, "[ESP] [MAV] Handling ARM/DISARM\r\n");
@@ -230,7 +303,7 @@ static void handle_command_long(ESP_Handler_t *dev, mavlink_message_t* msg) {
         }
     }
     if(result == MAV_RESULT_ACCEPTED){
-        MAVLink_SendCmdAck(dev, cmd.command, result);
+        MAVLink_SendCmdAck(cmd.command, result);
     }
     
 }
@@ -273,7 +346,7 @@ static void ESP_HandleMAVLinkMsg(ESP_Handler_t *dev, mavlink_message_t *msg){
 }
 
 
-static void handle_ipd_data(ESP_Handler_t *dev, uint8_t *data, uint16_t len) {
+static void ESP_HandleIPDData(ESP_Handler_t *dev, uint8_t *data, uint16_t len) {
     mavlink_message_t msg;
     mavlink_status_t status;
     DEBUG_PRINTF(DBG_VERBOSE, "[ESP] Received %d bytes: ", len);
@@ -315,8 +388,8 @@ ESP_Status_t ESP_WifiStationConnect(ESP_Handler_t* dev) {
     ESP_CMD(dev, cmd, 10000, "Connecting...");
     HAL_Delay(5000);
     DEBUG_PRINTF(DBG_VERBOSE, "[ESP] Connected. Checking IP\r\n");
-    ESP_SendCommand(dev, "AT+CIFSR",3000);
-    ESP_SendCommand(dev, "AT+CIPSTART=\"UDP\",\"192.168.0.255\",14550,14550", 3000);
+    ESP_SendATCommand(dev, "AT+CIFSR",3000);
+    ESP_SendATCommand(dev, "AT+CIPSTART=\"UDP\",\"192.168.0.255\",14550,14550", 3000);
     
     dev->state = ESP_STATE_IDLE;
     
@@ -340,7 +413,7 @@ ESP_Status_t ESP_UDPSoftAP(ESP_Handler_t* dev) {
     DEBUG_PRINTF(DBG_VERBOSE,"[ESP] Step: Close existing connections");
 
     
-    ESP_SendCommand(dev, "AT+CIPCLOSE",3000);
+    ESP_SendATCommand(dev, "AT+CIPCLOSE",3000);
     ESP_CMD(dev, "AT+CWMODE=2", 2000, "Set AP Mode");
 
     char cmd[128];
@@ -351,21 +424,21 @@ ESP_Status_t ESP_UDPSoftAP(ESP_Handler_t* dev) {
     }
 
     ESP_CMD(dev, cmd, 2000, "Configure SoftAP");
-    ESP_SendCommand(dev, "AT+CIPSTART=\"UDP\",\"192.168.4.255\",14550,14550", 3000);
+    ESP_SendATCommand(dev, "AT+CIPSTART=\"UDP\",\"192.168.4.255\",14550,14550", 3000);
     
     DEBUG_PRINTF(DBG_VERBOSE,"[ESP] RX: %s\r\n", dev->rx_buffer);
     DEBUG_PRINTF(DBG_VERBOSE, "Verifying AP...\r\n");
     
-    ESP_SendCommand(dev, "AT+CWSAP?", 1000);
+    ESP_SendATCommand(dev, "AT+CWSAP?", 1000);
     DEBUG_PRINTF(DBG_VERBOSE, "AP Config: %s\r\n", dev->rx_buffer);
     
-    ESP_SendCommand(dev, "AT+CIPAP?", 1000);
+    ESP_SendATCommand(dev, "AT+CIPAP?", 1000);
     DEBUG_PRINTF(DBG_INFO, "IP Config: %s\r\n", dev->rx_buffer);
 
-    ESP_SendCommand(dev, "AT+CWDHCP=0,1", 2000);  
+    ESP_SendATCommand(dev, "AT+CWDHCP=0,1", 2000);  
     HAL_Delay(1000);  
 
-    ESP_SendCommand(dev, "AT+CWDHCP?", 1000);   
+    ESP_SendATCommand(dev, "AT+CWDHCP?", 1000);   
     DEBUG_PRINTF(DBG_INFO, "DHCP Status: %s", dev->rx_buffer);
     dev->state = ESP_STATE_IDLE;
     
@@ -449,7 +522,7 @@ static ESP_Status_t ESP_ProcessByte(ESP_Handler_t* dev, uint8_t byte) {
             }
             
             if (ipd_received >= current_ipd.length) {
-                handle_ipd_data(dev, ipd_data, current_ipd.length);
+                ESP_HandleIPDData(dev, ipd_data, current_ipd.length);
                 dev->state = ESP_STATE_IDLE;
                 ipd_received = 0;
             }
@@ -526,7 +599,6 @@ void MAVLink_SendHeartbeat(ESP_Handler_t *dev) {
 
 void MAVLink_SendSysStatus(ESP_Handler_t* dev) {
     mavlink_message_t msg;
-    uint8_t attempt_count = 0;
     uint8_t buf[MAVLINK_MAX_PACKET_LEN];
     
     // System status
@@ -543,5 +615,4 @@ void MAVLink_SendSysStatus(ESP_Handler_t* dev) {
     );
     uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
     ESP_QueueMAVLink(&tx_queue, buf, len);
-
 }

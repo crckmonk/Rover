@@ -26,7 +26,7 @@ uint8_t Queue_IsFull(Queue_t* queue);
 
 uint8_t Queue_IsEmpty(Queue_t* queue);
 
-uint8_t Queue_Enqueue(Queue_t* queue, QueueItem_t* data, uint16_t len);
+uint8_t Queue_Enqueue(Queue_t* queue, uint8_t* data, uint16_t len);
 
 QueueItem_t* Queue_Peek(Queue_t* queue);
 

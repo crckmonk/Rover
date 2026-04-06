@@ -56,7 +56,7 @@ typedef struct {
 ESP_Status_t ESP_SendString(ESP_Handler_t* dev, const uint8_t* str);
 void MAVLink_SendSysStatus(ESP_Handler_t* dev);
 void ESP_Init(ESP_Handler_t* dev, UART_HandleTypeDef* huart, UART_Buffers_t* uart_buffers);
-ESP_Status_t ESP_SendCommand(ESP_Handler_t* dev, const uint8_t* cmd, uint32_t timeout);
+ESP_Status_t ESP_SendATCommand(ESP_Handler_t* dev, const uint8_t* cmd, uint32_t timeout);
 void ESP_ProccessAvailableBytes(ESP_Handler_t* dev);
 ESP_Status_t ESP_WifiStationConnect(ESP_Handler_t* dev);
 ESP_Status_t ESP_UDPSoftAP(ESP_Handler_t* dev);

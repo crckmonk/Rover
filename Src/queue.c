@@ -8,7 +8,7 @@ uint8_t Queue_IsEmpty(Queue_t* queue) {
     return queue->count == 0;
 }
 
-uint8_t Queue_Enqueue(Queue_t* queue, QueueItem_t* data, uint16_t len) {
+uint8_t Queue_Enqueue(Queue_t* queue, uint8_t* data, uint16_t len) {
     if (Queue_IsFull(queue) || len > MSG_MAX_SIZE) {
         DEBUG_PRINTF(DBG_ERROR, "[ESP] TX Queue full or msg too large\r\n");
         return 0;

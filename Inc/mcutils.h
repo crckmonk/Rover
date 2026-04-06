@@ -18,10 +18,7 @@ typedef enum {
 
 
 void I2C_Scan(I2C_HandleTypeDef *hi2c);
-
 void DEBUG_PRINTF(DEBUG_LEVEL_t level, const char* format, ...);
-
-
 void print_float(float value, uint16_t decimal_places);
 
 #endif // MCUTILS_H

@@ -7,12 +7,11 @@ void I2C_Scan(I2C_HandleTypeDef *hi2c){
   uint16_t i, ret =0;
     HAL_Delay(1000);
  
-    /*-[ I2C Bus Scanning ]-*/
     printf("%s", StartMSG);
     for(i=1; i<128; i++)
     {
         ret = HAL_I2C_IsDeviceReady(hi2c, (uint16_t)(i<<1), 3, 5);
-        if (ret != HAL_OK) /* No ACK Received At That Address */
+        if (ret != HAL_OK)
         {
           printf(" - ");
           }
@@ -23,6 +22,7 @@ void I2C_Scan(I2C_HandleTypeDef *hi2c){
     }
     printf("%s",EndMSG);
 }
+
 void DEBUG_PRINTF(DEBUG_LEVEL_t level, const char* format, ...){
     if (level > DEBUG_LEVEL) return;
 
