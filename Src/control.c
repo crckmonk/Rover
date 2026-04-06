@@ -76,10 +76,10 @@ uint16_t Rover_GetVBat(){
 void Rover_ProcessManualCtrl(mavlink_manual_control_t *control_msg){ 
     /* * Incoming XYZ values are in [-1000, 1000] range; Motor values are in [0-100]*/
     if (RoverState.mode & MAV_MODE_FLAG_SAFETY_ARMED ){
-        DEBUG_PRINTF(DEBUG_VERBOSE, "[ROVER] Processing manual control\r\n");
+        DEBUG_PRINTF(DBG_VERBOSE, "[ROVER] Processing manual control\r\n");
         uint16_t throttle_base,throttle_left, throttle_right;
         /* TODO: Figure out and document a better steering algorithm */
-        /* FIX: Turning right only works when throttle is at 100. Likely a mechanical/wiring issue */
+        /* FIX: Turning right only works when throttle is at 100. Likely a mechanical/electrical issue */
         RoverState.direction = control_msg->x >=0 ? control_msg->x > 0 ?FORWARD : HALT : REVERSE;
         RoverState.direction_left = control_msg->y >= 0 ?  FORWARD : REVERSE;
         RoverState.direction_right = control_msg->y <= 0 ?  FORWARD : REVERSE;
@@ -92,7 +92,7 @@ void Rover_ProcessManualCtrl(mavlink_manual_control_t *control_msg){
 
         RoverState.left_motor = (uint8_t)(throttle_left <= 1000? (throttle_left / 10): 100);
         RoverState.right_motor = (uint8_t)( throttle_right <= 1000? (throttle_right / 10): 100);
-        DEBUG_PRINTF(DEBUG_INFO, "[ROVER] Right motor: %d\r\nLeft motor: %d\r\nDirection: %s\r\nDirection left: %s\r\nDirection right %s\r\n ", RoverState.left_motor, RoverState.right_motor, RoverState.direction == FORWARD ? "Forward": RoverState.direction == REVERSE ? "Reverse": "Halt", RoverState.direction_left == FORWARD? "Forward":"Reverse", RoverState.direction_right == FORWARD? "Forward":"Reverse");
+        DEBUG_PRINTF(DBG_INFO, "[ROVER] Right motor: %d\r\nLeft motor: %d\r\nDirection: %s\r\nDirection left: %s\r\nDirection right %s\r\n ", RoverState.left_motor, RoverState.right_motor, RoverState.direction == FORWARD ? "Forward": RoverState.direction == REVERSE ? "Reverse": "Halt", RoverState.direction_left == FORWARD? "Forward":"Reverse", RoverState.direction_right == FORWARD? "Forward":"Reverse");
 
         RoverState.control_pending = 1;
     }

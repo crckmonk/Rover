@@ -30,7 +30,7 @@
 //#include "NRF24/esp8266.h"
 #include "mcutils.h"
 // #include "yyjson.h"
-#include "NRF24/ESP8266.h"
+//#include "NRF24/ESP8266.h"
 #include "global_config.h"
 #include "motor.h"
 
@@ -55,12 +55,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-uint8_t RxTxAddress[5] = {0xD7, 0xD7, 0xD7, 0xD7, 0xD7};
-uint8_t txBuffer[NRF24_PAYLOAD_LENGTH] = {0};
-uint8_t rxBuffer[NRF24_PAYLOAD_LENGTH] = {0};
-NRF24_Handler_t nrf;
-command_packet currentCommand = {0};
-command_packet rxCmdPacket;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,11 +65,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-QMC_Handle_t qmc_sensor;
-
 extern UART_Buffers_t UART1_Buffer;
 extern UART_Buffers_t UART6_Buffer;
 extern I2C_HandleTypeDef hi2c1;
+
 LSM303_RawData_t accData_raw = {0};
 LSM303_RawData_t magData_raw = {0};
 
@@ -88,6 +81,8 @@ LSM303_RawData_t accData_cal = {0};
 float heading = 0.0f;
 
 uint16_t adc_vbat_raw = 0;
+
+
 volatile uint8_t send_heartbeat = 0;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
@@ -106,11 +101,8 @@ uint16_t readBatt(void)
   adcValue = HAL_ADC_GetValue(&hadc1);
   HAL_ADC_Stop(&hadc1);
 
-
   // Multiplier = 1 240 000 / 240 000 = 5.1
-  
   voltage_mV = (uint32_t)adcValue * 3300 * 31 / 4096 / 6;
-  
   return (uint16_t)voltage_mV;
 }
 /* USER CODE END 0 */
@@ -165,34 +157,44 @@ int main(void)
   // lsm303dlhc_mag_init.gain = LSM303DLHC_MAGGAIN_1_3;
   // lsm303dlhc_mag_init.auto_range = false;
 
-  DEBUG_PRINTF(DEBUG_INFO, "Testing ESP8266\r\n");
-  DEBUG_PRINTF(DEBUG_INFO, "Initializing motors with TIM2\r\n");
-  motor_Init(&htim2);
+  DEBUG_PRINTF(DBG_INFO, "Testing ESP8266\r\n");
+  DEBUG_PRINTF(DBG_INFO, "Initializing motors with TIM2\r\n");
+  Motor_Init(&htim2);
   
-  ESP8266_Handler_t esp_dev;
+  ESP_Handler_t esp_dev;
 
 
 
-  ESP8266_Init(&esp_dev, &huart6, &UART6_Buffer);
-  esp_dev.ssid = (uint8_t *)"RoverAP";
-  esp_dev.password = (uint8_t *)"moronik88";
+  ESP_Init(&esp_dev, &huart6, &UART6_Buffer);
 
+  // Soft AP credentials
+  // esp_dev.ssid = (uint8_t *)"RoverAP";
+  // esp_dev.password = (uint8_t *)"moronik88";
+
+  esp_dev.ssid = WIFI_SSID;
+  esp_dev.password = WIFI_PASS;
+  
   HAL_UART_Receive_IT(&huart6, &esp_dev.uart_buffers->RxByte, 1);
-
-  while (  ESP8266_UDPSoftAP(&esp_dev) != ESP8266_OK) {
-    DEBUG_PRINTF(DEBUG_ERROR, "SoftAP Initialization failed, retrying...\r\n");
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
+  
+  while (  ESP_WifiStationConnect(&esp_dev) != ESP_OK) {
+    DEBUG_PRINTF(DBG_ERROR, "Failed to connect, retrying...\r\n");
+    HAL_GPIO_TogglePin(GPIOC, LED2_Pin);
     HAL_Delay(1000);
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
+    HAL_GPIO_TogglePin(GPIOC, LED2_Pin);
   }
+  // while (  ESP_UDPSoftAP(&esp_dev) != ESP_OK) {
+  //   DEBUG_PRINTF(DEBUG_ERROR, "SoftAP Initialization failed, retrying...\r\n");
+  //   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
+  //   HAL_Delay(1000);
+  //   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
+  // }
 
 
 
-  DEBUG_PRINTF(DEBUG_INFO, "UDP SoftAP Initialized successfully\r\n");
-  DEBUG_PRINTF(DEBUG_VERBOSE, "RX Buffer: %s\r\n", esp_dev.rx_buffer);
-  DEBUG_PRINTF(DEBUG_INFO, "Transmitting heartbeat\r\n");
+  DEBUG_PRINTF(DBG_INFO, "UDP SoftAP Initialized successfully\r\n");
+  DEBUG_PRINTF(DBG_VERBOSE, "RX Buffer: %s\r\n", esp_dev.rx_buffer);
+  DEBUG_PRINTF(DBG_INFO, "Transmitting heartbeat\r\n");
   HAL_TIM_Base_Start_IT(&htim3);
-  // HAL_ADC_Start_IT(&hadc1);
 
   /* USER CODE END 2 */
 
@@ -201,16 +203,16 @@ int main(void)
   
   while (1)
   { 
-    ESP8266_MainLoop(&esp_dev);
+    ESP_MainLoop(&esp_dev);
     if (send_heartbeat) {
       Rover_SetVBat(readBatt());
-      DEBUG_PRINTF(DEBUG_INFO, "Battery voltage is: %d mV\r\n", Rover_GetVBat());
-      MavLink_SendHeartbeat(&esp_dev);
-      HAL_Delay(50);
-      ESP8266_SendTelemetry(&esp_dev);
+      //DEBUG_PRINTF(DBG_INFO, "Battery voltage is: %d mV\r\n", Rover_GetVBat());
+      MAVLink_SendHeartbeat(&esp_dev);
+       //HAL_Delay(50);
+       //MAVLink_SendSysStatus(&esp_dev);
       send_heartbeat = 0;
     }
-    ESP8266_MainLoop(&esp_dev);
+    ESP_MainLoop(&esp_dev);
     Rover_ApplyControlState();
     // if (Rover_GetMode() & MAV_MODE_FLAG_SAFETY_ARMED){
       
@@ -322,9 +324,9 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-  if (GPIO_Pin == nrf.NRF24_IRQ_GPIO_PIN) {
-    NRF24_IRQ_Handler(&nrf);
-  }
+  // if (GPIO_Pin == nrf.NRF24_IRQ_GPIO_PIN) {
+  //   NRF24_IRQ_Handler(&nrf);
+  // }
 }
 /* USER CODE END 4 */
 

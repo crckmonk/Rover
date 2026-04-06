@@ -27,9 +27,9 @@ void DEBUG_PRINTF(DEBUG_LEVEL_t level, const char* format, ...){
     if (level > DEBUG_LEVEL) return;
 
     switch(level){
-        case DEBUG_ERROR:   printf("[ERROR] "); break;
-        case DEBUG_INFO:    printf("[INFO] "); break;
-        case DEBUG_VERBOSE: printf("[VERBOSE] "); break;
+        case DBG_ERROR:   printf("[ERROR] "); break;
+        case DBG_INFO:    printf("[DBG_INFO] "); break;
+        case DBG_VERBOSE: printf("[DBG_VERBOSE] "); break;
         default: return;
     }
 

@@ -42,7 +42,7 @@ extern UART_HandleTypeDef huart6;
 #define UART_TX_BUFFER_SIZE 512
 #define UART_RX_BUFFER_SIZE 2048
 
-typedef struct {
+typedef struct UART_Buffers_t{
      UART_HandleTypeDef* huart;
      uint8_t TxBuffer[UART_TX_BUFFER_SIZE];
      uint16_t TxWrite;

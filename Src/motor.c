@@ -77,25 +77,25 @@ void Test_Speed_Settings(motor_Direction_t dir){
 
 void Motor_TestChannels(void){
     // Test each channel at 50% for 2 seconds
-    DEBUG_PRINTF(DEBUG_INFO, "Testing LEFT_FORWARD\r\n");
+    DEBUG_PRINTF(DBG_INFO, "Testing LEFT_FORWARD\r\n");
     __HAL_TIM_SET_COMPARE(motor_timer, LEFT_FORWARD, 50);
     HAL_Delay(2000);
     __HAL_TIM_SET_COMPARE(motor_timer, LEFT_FORWARD, 0);
     HAL_Delay(500);
 
-    DEBUG_PRINTF(DEBUG_INFO, "Testing LEFT_REVERSE\r\n");
+    DEBUG_PRINTF(DBG_INFO, "Testing LEFT_REVERSE\r\n");
     __HAL_TIM_SET_COMPARE(motor_timer, LEFT_REVERSE, 50);
     HAL_Delay(2000);
     __HAL_TIM_SET_COMPARE(motor_timer, LEFT_REVERSE, 0);
     HAL_Delay(500);
 
-    DEBUG_PRINTF(DEBUG_INFO, "Testing RIGHT_FORWARD\r\n");
+    DEBUG_PRINTF(DBG_INFO, "Testing RIGHT_FORWARD\r\n");
     __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_FORWARD, 50);
     HAL_Delay(2000);
     __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_FORWARD, 0);
     HAL_Delay(500);
 
-    DEBUG_PRINTF(DEBUG_INFO, "Testing RIGHT_REVERSE\r\n");
+    DEBUG_PRINTF(DBG_INFO, "Testing RIGHT_REVERSE\r\n");
     __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_REVERSE, 50);
     HAL_Delay(2000);
     __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_REVERSE, 0);

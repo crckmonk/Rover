@@ -7,14 +7,15 @@
 #include "printf.h"
 #include <stdarg.h>
 
-#define DEBUG_LEVEL DEBUG_VERBOSE
-
 typedef enum {
-    DEBUG_NONE = 0,
-    DEBUG_ERROR,
-    DEBUG_INFO,
-    DEBUG_VERBOSE 
+    DBG_NONE = 0,
+    DBG_ERROR,
+    DBG_INFO,
+    DBG_VERBOSE 
 } DEBUG_LEVEL_t;
+
+#define DEBUG_LEVEL DBG_INFO
+
 
 void I2C_Scan(I2C_HandleTypeDef *hi2c);
 

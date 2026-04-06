@@ -36,8 +36,9 @@ extern "C" {
 #include "printf.h"
 #include "printf_config.h"
 #include "control.h"
-#include "NRF24/nrf24.h"
-#include "NRF24/radio.h"
+//#include "NRF24/nrf24.h"
+//#include "NRF24/radio.h"
+#include "esp_at.h"
 #include "lsm303.h"
 
 /* USER CODE END Includes */
