@@ -69,6 +69,10 @@ uint16_t Rover_SetVBat(uint16_t vbat);
 
 uint16_t Rover_GetVBat();
 
+void Rover_FullStopSoft();
+
+void Rover_FullStopHard();
+
 void Rover_ProcessManualCtrl(mavlink_manual_control_t *control_msg);
 
 void Rover_ApplyControlState();

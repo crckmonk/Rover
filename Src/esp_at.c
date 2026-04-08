@@ -15,6 +15,10 @@
 static volatile uint8_t          manual_ctrl_pending = 0;
 static mavlink_manual_control_t  pending_manual_ctrl;
 
+static Queue_t tx_queue = {0};
+static Queue_t rx_queue = {0};
+
+
 /* * Debug utils*/
 static const char* ESP_StatusToString(ESP_Status_t status) {
     switch (status) {
@@ -38,10 +42,17 @@ typedef struct {
 
 static RoverParam_t params[] = {
     {"SYSID_THISMAV", 1.0f, MAV_PARAM_TYPE_INT32},
+    {"NEG_THROTTLE_COMP", 0, MAV_PARAM_TYPE_UINT8}
 };
 
 
 #define PARAM_COUNT (sizeof(params) / sizeof(params[0]))
+
+
+static uint8_t ESP_QueueMAVLink(Queue_t* queue, uint8_t *data, uint16_t len) {
+    return Queue_Enqueue(queue, data, len);
+}
+
 
 void MAVLink_SendParamValue(uint16_t index) {
     if (index >= PARAM_COUNT) return;
@@ -73,15 +84,11 @@ void MAVLink_SendParamValue(uint16_t index) {
 } while(0)
 
 
-static Queue_t tx_queue = {0};
-static Queue_t rx_queue = {0};
 
 
 
 
-static uint8_t ESP_QueueMAVLink(Queue_t* queue, uint8_t *data, uint16_t len) {
-    return Queue_Enqueue(queue, data, len);
-}
+
 
 static ESP_Status_t ESP_SendMAVLink(ESP_Handler_t *dev, uint8_t *data, uint32_t len) {
     uint8_t cmd[32];
@@ -296,7 +303,7 @@ static void handle_command_long(ESP_Handler_t *dev, mavlink_message_t* msg) {
                 DEBUG_PRINTF(DBG_INFO, "[ESP] [MAV] Disarmed\r\n");
             }
             break;
-        }   
+        }
         case MAV_CMD_DO_SET_MODE: {
             result = MAV_RESULT_ACCEPTED;
             break;
@@ -325,6 +332,10 @@ static void ESP_HandleMAVLinkMsg(ESP_Handler_t *dev, mavlink_message_t *msg){
                     }
                 case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {
                     DEBUG_PRINTF(DBG_INFO,"[ESP] GCS requesting parameter list\r\n");
+                        for (uint16_t i = 0; i < PARAM_COUNT; i++) {
+                            MAVLink_SendParamValue(i);
+                            HAL_Delay(10);
+                        }
                     break;
                     }
                 case MAVLINK_MSG_ID_REQUEST_DATA_STREAM: {
