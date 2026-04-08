@@ -39,6 +39,7 @@ extern "C" {
 //#include "NRF24/nrf24.h"
 //#include "NRF24/radio.h"
 #include "esp_at.h"
+#include "rover_mavlink.h"
 #include "lsm303.h"
 
 /* USER CODE END Includes */

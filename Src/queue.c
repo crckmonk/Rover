@@ -1,5 +1,16 @@
 #include "queue.h"
 
+static const struct Queue_t EmptyQueue;
+
+
+HAL_StatusTypeDef Queue_Init(Queue_t* queue){
+    if (queue == NULL) return HAL_ERROR;
+    *queue = EmptyQueue;
+    return HAL_OK;
+}
+
+
+
 uint8_t Queue_IsFull(Queue_t* queue) {
     return queue->count >= QUEUE_SIZE;
 }

@@ -38,7 +38,7 @@ uint8_t Rover_CheckArmed(){
 uint8_t Rover_Disarm(){
     RoverState.mode = (RoverState.mode & ~MAV_MODE_FLAG_SAFETY_ARMED);
     HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
-    Rover_FullStopSoft();
+    Rover_FullStopHard();
     return RoverState.mode;
 }
 

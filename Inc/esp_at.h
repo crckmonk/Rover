@@ -3,7 +3,6 @@
 
 #include "stm32f4xx_hal.h"
 #include "usart.h"
-#include "queue.h"
 
 
 #define ESP_MAX_BUFFER_SIZE 512
@@ -16,11 +15,10 @@
 typedef struct UART_Buffers_t UART_Buffers_t;
 
 typedef enum {
-    ESP_ERROR = 0,
-    ESP_OK,
-    ESP_BUSY,
-    ESP_NO_RESPONSE,
-    ESP_TIMEOUT
+    ESP_OK = HAL_OK,
+    ESP_ERROR = HAL_ERROR,
+    ESP_BUSY = HAL_BUSY,
+    ESP_TIMEOUT = HAL_TIMEOUT
 } ESP_Status_t;
 
 
@@ -37,7 +35,7 @@ typedef struct {
     uint16_t remote_port;
 } ESP_IPDHeader_t;
 
-typedef struct {
+typedef struct ESP_Handler_t{
     UART_HandleTypeDef* huart;
     volatile UART_Buffers_t *uart_buffers;
     
@@ -54,13 +52,12 @@ typedef struct {
 } ESP_Handler_t;
 
 ESP_Status_t ESP_SendString(ESP_Handler_t* dev, const uint8_t* str);
-void MAVLink_SendSysStatus(ESP_Handler_t* dev);
 void ESP_Init(ESP_Handler_t* dev, UART_HandleTypeDef* huart, UART_Buffers_t* uart_buffers);
 ESP_Status_t ESP_SendATCommand(ESP_Handler_t* dev, const uint8_t* cmd, uint32_t timeout);
+ESP_Status_t ESP_SendMessage(ESP_Handler_t* dev, uint8_t* data, uint32_t len);
 void ESP_ProccessAvailableBytes(ESP_Handler_t* dev);
 ESP_Status_t ESP_WifiStationConnect(ESP_Handler_t* dev);
 ESP_Status_t ESP_UDPSoftAP(ESP_Handler_t* dev);
 void ESP_MainLoop(ESP_Handler_t* dev);
-void MAVLink_SendHeartbeat(ESP_Handler_t *dev);
 
 #endif /* ESP_AT_H */

@@ -167,31 +167,28 @@ int main(void)
 
   ESP_Init(&esp_dev, &huart6, &UART6_Buffer);
 
-  // Soft AP credentials
-  // esp_dev.ssid = (uint8_t *)"RoverAP";
-  // esp_dev.password = (uint8_t *)"moronik88";
+
+
+
 
   esp_dev.ssid = WIFI_SSID;
   esp_dev.password = WIFI_PASS;
   
   HAL_UART_Receive_IT(&huart6, &esp_dev.uart_buffers->RxByte, 1);
   
+  MAVLink_Init(&esp_dev);
+
   while (  ESP_WifiStationConnect(&esp_dev) != ESP_OK) {
     DEBUG_PRINTF(DBG_ERROR, "Failed to connect, retrying...\r\n");
     HAL_GPIO_TogglePin(GPIOC, LED2_Pin);
     HAL_Delay(1000);
     HAL_GPIO_TogglePin(GPIOC, LED2_Pin);
   }
-  // while (  ESP_UDPSoftAP(&esp_dev) != ESP_OK) {
-  //   DEBUG_PRINTF(DEBUG_ERROR, "SoftAP Initialization failed, retrying...\r\n");
-  //   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
-  //   HAL_Delay(1000);
-  //   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_14);
-  // }
 
 
 
-  DEBUG_PRINTF(DBG_INFO, "UDP SoftAP Initialized successfully\r\n");
+
+  DEBUG_PRINTF(DBG_INFO, "ESP Initialized successfully\r\n");
   DEBUG_PRINTF(DBG_VERBOSE, "RX Buffer: %s\r\n", esp_dev.rx_buffer);
   DEBUG_PRINTF(DBG_INFO, "Transmitting heartbeat\r\n");
   HAL_TIM_Base_Start_IT(&htim3);
@@ -206,13 +203,10 @@ int main(void)
     ESP_MainLoop(&esp_dev);
     if (send_heartbeat) {
       Rover_SetVBat(readBatt());
-      //DEBUG_PRINTF(DBG_INFO, "Battery voltage is: %d mV\r\n", Rover_GetVBat());
-      MAVLink_SendHeartbeat(&esp_dev);
-       //HAL_Delay(50);
-       //MAVLink_SendSysStatus(&esp_dev);
+      MAVLink_SendHeartbeat();
       send_heartbeat = 0;
     }
-    ESP_MainLoop(&esp_dev);
+    MAVLink_MainLoop();
     Rover_ApplyControlState();
     // if (Rover_GetMode() & MAV_MODE_FLAG_SAFETY_ARMED){
       

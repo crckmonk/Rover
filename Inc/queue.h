@@ -22,6 +22,8 @@ typedef struct Queue_t{
 } Queue_t;
 
 
+HAL_StatusTypeDef Queue_Init(Queue_t* queue);
+
 uint8_t Queue_IsFull(Queue_t* queue);
 
 uint8_t Queue_IsEmpty(Queue_t* queue);

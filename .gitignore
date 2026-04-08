@@ -265,3 +265,4 @@ cmake/stm32cubemx/CMakeLists.txt
 .claude/settings.local.json
 doc/kicad/rover-backups/
 Src/main.c
+Inc/global_config.h
