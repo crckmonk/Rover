@@ -71,7 +71,7 @@ HAL_StatusTypeDef MAVLink_ProcessTXQueue(void) {
         Queue_Dequeue(&tx_queue);
         return HAL_OK;
     } else {
-        DEBUG_PRINTF(DBG_ERROR, "[ESP] TX Send failed\r\n");
+        DEBUG_PRINTF(DBG_ERROR, "[MAV] TX Send failed\r\n");
     }
     return HAL_ERROR;
 }
@@ -90,45 +90,43 @@ void MAVLink_HandleCommandLong(mavlink_message_t* msg) {
     /* TODO: Add handlers for more commands*/
     mavlink_command_long_t cmd;
     mavlink_msg_command_long_decode(msg, &cmd);
-    DEBUG_PRINTF(DBG_INFO, "[ESP] [MAV] Handling command: %d\r\n", cmd.command);
+    DEBUG_PRINTF(DBG_INFO, "[MAV] Handling command: %d\r\n", cmd.command);
     if (cmd.target_system != Rover_GetId()) {
-        DEBUG_PRINTF(DBG_INFO, "[ESP] [MAV] Cmd wrong target system\r\n");
+        DEBUG_PRINTF(DBG_INFO, "[MAV] Cmd wrong target system\r\n");
         return;
     }
     uint8_t result = MAV_RESULT_FAILED;
     switch(cmd.command) {
         case MAV_CMD_REQUEST_MESSAGE: {
                 uint32_t msg_id = (uint32_t)cmd.param1;
-                DEBUG_PRINTF(DBG_INFO, "[ESP] [MAV] Message requested: %d\r\n", cmd.param1);
+                DEBUG_PRINTF(DBG_INFO, "[MAV] Message requested: %d\r\n", cmd.param1);
                 switch(msg_id){
-                    case 148: // AUTOPILOT_VERSION
+                    case MAVLINK_MSG_ID_AUTOPILOT_VERSION:{
                         MAVLink_SendCmdAck(cmd.command, MAV_RESULT_ACCEPTED);
                         MAVLink_SendAutopilotVersion();
                         break;
-                    case 300: // PROTOCOL_VERSION
+                    }
+                    case MAVLINK_MSG_ID_PROTOCOL_VERSION: {
                         MAVLink_SendCmdAck(cmd.command, MAV_RESULT_ACCEPTED);
-                        //SendProtocolVersion
                         break;
-                    case 259: 
-                            MAVLink_SendCmdAck(cmd.command, MAV_RESULT_UNSUPPORTED);
-                            break;
+                        }
                     default:
                         MAVLink_SendCmdAck(cmd.command, MAV_RESULT_UNSUPPORTED);
                         break;
                 }
         }
         case MAV_CMD_COMPONENT_ARM_DISARM: {
-                DEBUG_PRINTF(DBG_INFO, "[ESP] [MAV] Handling ARM/DISARM\r\n");
+                DEBUG_PRINTF(DBG_INFO, "[MAV] Handling ARM/DISARM\r\n");
                 bool arm = (cmd.param1 > 0.5f);
             
             if (arm) {
                 Rover_Arm();
                 result = MAV_RESULT_ACCEPTED;
-                DEBUG_PRINTF(DBG_INFO, "[ESP] [MAV] Armed\r\n");
+                DEBUG_PRINTF(DBG_INFO, "[MAV] Armed\r\n");
             } else {
                 Rover_Disarm();
                 result = MAV_RESULT_ACCEPTED;
-                DEBUG_PRINTF(DBG_INFO, "[ESP] [MAV] Disarmed\r\n");
+                DEBUG_PRINTF(DBG_INFO, "[MAV] Disarmed\r\n");
             }
             break;
         }
@@ -198,7 +196,7 @@ void MAVLink_HandleMessage( mavlink_message_t *msg){
                 case MAVLINK_MSG_ID_HEARTBEAT: {
                     mavlink_heartbeat_t hb;
                     mavlink_msg_heartbeat_decode(msg, &hb);
-                    DEBUG_PRINTF(DBG_INFO, "[ESP] Heartbeat from sysid=%d compid=%d type=%d\r\n",
+                    DEBUG_PRINTF(DBG_INFO, "[MAV] Heartbeat from sysid=%d compid=%d type=%d\r\n",
                            msg->sysid, msg->compid, hb.type);
                     break;
                     }
@@ -207,15 +205,34 @@ void MAVLink_HandleMessage( mavlink_message_t *msg){
                     break;
                     }
                 case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {
-                    DEBUG_PRINTF(DBG_INFO,"[ESP] GCS requesting parameter list\r\n");
+                    DEBUG_PRINTF(DBG_INFO,"[MAV] GCS requesting parameter list\r\n");
                         for (uint16_t i = 0; i <  COUNT(params); i++) {
                             MAVLink_SendParamValue(i);
-                            HAL_Delay(10);
                         }
                     break;
                     }
+                case MAVLINK_MSG_ID_PARAM_REQUEST_READ: {
+                    mavlink_param_request_read_t req;
+                    mavlink_msg_param_request_read_decode(&msg, &req);
+
+                     if (req.param_index >= 0){
+                         MAVLink_SendParamValue((uint16_t)req.param_index);
+                     } else {
+                        for (uint16_t i = 0; i < COUNT(params); i++){
+                            if (strncmp(params[i].name, req.param_id, 16)== 0){
+                                MAVLink_SendParamValue(i);
+                                break;
+                            }
+                        }
+                     }
+                     break;
+                }
+                case MAVLINK_MSG_ID_PARAM_SET: {
+                    mavlink_param_set_t set;
+                    mavlink_msg_param_set_decode(&msg, &set);
+                }
                 case MAVLINK_MSG_ID_REQUEST_DATA_STREAM: {
-                    DEBUG_PRINTF(DBG_INFO,"[ESP] GCS requesting data stream\r\n");
+                    DEBUG_PRINTF(DBG_INFO,"[MAV] GCS requesting data stream\r\n");
                     break;
                 }
                 case MAVLINK_MSG_ID_MANUAL_CONTROL: {
@@ -227,7 +244,7 @@ void MAVLink_HandleMessage( mavlink_message_t *msg){
                     break;
                     }
                 default:
-                    DEBUG_PRINTF(DBG_INFO, "[ESP]  Unknown message ID: %d\r\n", msg->msgid);
+                    DEBUG_PRINTF(DBG_INFO, "[MAV]  Unknown message ID: %d\r\n", msg->msgid);
                     break;
             }
 }
@@ -243,8 +260,8 @@ void MAVLink_MainLoop(void) {
   do {
     result = MAVLink_ProcessTXQueue();
     retry_counter++;
-    HAL_Delay(5);
-  } while (result != HAL_OK || retry_counter < 5);
+    HAL_Delay(1);
+  } while (result != HAL_OK || retry_counter < 6);
 }
 
 void MAVLink_SendHeartbeat(void) {
@@ -266,11 +283,11 @@ void MAVLink_SendHeartbeat(void) {
     );
     
     uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
-    while (attempt_count < 5){
+    while (attempt_count < 8){
         if (ESP_SendMessage(esp_dev, buf,len) != ESP_OK){
             return;
         } else {
-            HAL_Delay(50);
+            HAL_Delay(10);
             attempt_count++;
         }
     }
@@ -279,8 +296,6 @@ void MAVLink_SendHeartbeat(void) {
 void MAVLink_SendSysStatus(void) {
     mavlink_message_t msg;
     uint8_t buf[MAVLINK_MAX_PACKET_LEN];
-    
-    // System status
     mavlink_msg_sys_status_pack(
         Rover_GetId(), MAV_COMP_ID_AUTOPILOT1, &msg,
         0,              // onboard_control_sensors_present
