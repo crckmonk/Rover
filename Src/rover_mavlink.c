@@ -213,7 +213,7 @@ void MAVLink_HandleMessage( mavlink_message_t *msg){
                     }
                 case MAVLINK_MSG_ID_PARAM_REQUEST_READ: {
                     mavlink_param_request_read_t req;
-                    mavlink_msg_param_request_read_decode(&msg, &req);
+                    mavlink_msg_param_request_read_decode(msg, &req);
 
                      if (req.param_index >= 0){
                          MAVLink_SendParamValue((uint16_t)req.param_index);
@@ -229,7 +229,18 @@ void MAVLink_HandleMessage( mavlink_message_t *msg){
                 }
                 case MAVLINK_MSG_ID_PARAM_SET: {
                     mavlink_param_set_t set;
-                    mavlink_msg_param_set_decode(&msg, &set);
+                    mavlink_msg_param_set_decode(msg, &set);
+
+
+                    for (uint16_t i = 0; i < COUNT(params); i++) {
+                    if (strncmp(params[i].name, set.param_id, 16) == 0) {
+                        params[i].value = set.param_value;
+                        MAVLink_SendParamValue(i);
+                        break;
+                    }
+                }
+                break;
+
                 }
                 case MAVLINK_MSG_ID_REQUEST_DATA_STREAM: {
                     DEBUG_PRINTF(DBG_INFO,"[MAV] GCS requesting data stream\r\n");
