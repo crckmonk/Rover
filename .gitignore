@@ -266,3 +266,4 @@ cmake/stm32cubemx/CMakeLists.txt
 doc/kicad/rover-backups/
 Src/main.c
 Inc/global_config.h
+Inc/global_config.h
