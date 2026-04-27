@@ -143,6 +143,7 @@ int main(void)
   MX_USART6_UART_Init();
   MX_TIM3_Init();
   MX_ADC1_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
  // LSM303_AccInit_t lsm303dlhc_acc_init = {0};
   // LSM303_MagInit_t lsm303dlhc_mag_init = {0};
@@ -161,6 +162,10 @@ int main(void)
   DEBUG_PRINTF(DBG_INFO, "Initializing motors with TIM2\r\n");
   Motor_Init(&htim2);
   
+
+    Motor_TestChannels();
+  Motor_TestTurning();
+
   ESP_Handler_t esp_dev;
 
 
@@ -193,6 +198,34 @@ int main(void)
   DEBUG_PRINTF(DBG_INFO, "Transmitting heartbeat\r\n");
   HAL_TIM_Base_Start_IT(&htim3);
 
+
+  printf("Initializing lsm303\r\n");
+
+  LSM303_AccInit_t lsm303dlhc_acc_init = { 0 };
+	LSM303_MagInit_t lsm303dlhc_mag_init = { 0 };
+	
+	lsm303dlhc_acc_init.ctrl_reg1_a = LSM303DLHC_ACR1A_XEN | LSM303DLHC_ACR1A_YEN | LSM303DLHC_ACR1A_ZEN | LSM303DLHC_ACR1A_ODR30_100_HZ;
+	lsm303dlhc_acc_init.ctrl_reg4_a = LSM303DLHC_ACR4A_FS10_1MG;
+	
+	lsm303dlhc_mag_init.op = LSM303DLHC_MAGOP_CONT;
+	lsm303dlhc_mag_init.rate = LSM303DLHC_MAGRATE_15;
+	lsm303dlhc_mag_init.gain = LSM303DLHC_MAGGAIN_1_3;
+	lsm303dlhc_mag_init.auto_range = false;
+
+
+
+  if (LSM303_InitAcc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
+    printf("LSM303DLHC Accel Init Error\r\n");
+    }
+
+	if (LSM303_InitMag(&hi2c1, &lsm303dlhc_mag_init) != LSM303DLHC_OK) {
+		printf("LSM303DLHC Mag Init Error\r\n");
+	}
+
+    printf("Accelerometer Calibration done\r\nCalibrating magnetometer arount Z axis\r\n");
+  LSM303_2DMagCalibration(20);
+
+  printf("Continuos magnetometer calibration mode\r\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -200,6 +233,26 @@ int main(void)
   
   while (1)
   { 
+    if (LSM303_ReadAccRaw(&accData_raw) == LSM303DLHC_OK) {
+      //printf("ACC Raw X: %d, Y: %d, Z: %d\r\n", accData_raw.x, accData_raw.y, accData_raw.z);
+      LSM303_ApplyAccCalibration(&accData_raw, &accData_cal);
+      //printf("ACC Calibrated X: %d, Y: %d, Z: %d\r\n", accData_cal.x, accData_cal.y, accData_cal.z);
+			LSM303_ConvertAcc(&accData_grav, &accData_cal);
+      //printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", accData_grav.x, accData_grav.y, accData_grav.z);
+      //printf("ACC Conv X: %.3f, Y: %.3f, Z: %.3f\r\n", accData_grav.x, accData_grav.y, accData_grav.z);
+		} else {
+			/* handle error */
+		}
+    		if (LSM303_ReadMagRaw(&magData_raw) == LSM303DLHC_OK) {
+      LSM303_MagCalibrationUpdateRange(&magData_raw);
+      LSM303_MagCalibrationCompute();
+      LSM303_ApplyMagCalibration(&magData_raw, &magData_cal);
+      heading = LSM303_GetHeadingDegrees(&magData_cal);
+      printf("Calibrated heading: %0.2f deg\r\n", heading);
+      
+		} else {
+			/* handle error */
+		}
     ESP_MainLoop(&esp_dev);
     if (send_heartbeat) {
       Rover_SetVBat(readBatt());

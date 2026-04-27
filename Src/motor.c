@@ -76,27 +76,60 @@ void Test_Speed_Settings(motor_Direction_t dir){
 }
 
 void Motor_TestChannels(void){
-    // Test each channel at 50% for 2 seconds
-    DEBUG_PRINTF(DBG_INFO, "Testing LEFT_FORWARD\r\n");
-    __HAL_TIM_SET_COMPARE(motor_timer, LEFT_FORWARD, 50);
-    HAL_Delay(2000);
+        DEBUG_PRINTF(DBG_INFO, "Testing LEFT_FORWARD\r\n");
+    for (uint8_t i = 0; i< 100;i++){
+        __HAL_TIM_SET_COMPARE(motor_timer, LEFT_FORWARD, i);
+        HAL_Delay(50);
+    }
     __HAL_TIM_SET_COMPARE(motor_timer, LEFT_FORWARD, 0);
-    HAL_Delay(500);
+    HAL_Delay(200);
 
     DEBUG_PRINTF(DBG_INFO, "Testing LEFT_REVERSE\r\n");
-    __HAL_TIM_SET_COMPARE(motor_timer, LEFT_REVERSE, 50);
-    HAL_Delay(2000);
+    for (uint8_t i = 0; i< 100;i++){
+        
+        __HAL_TIM_SET_COMPARE(motor_timer, LEFT_REVERSE, i);
+        HAL_Delay(50);
+    }
     __HAL_TIM_SET_COMPARE(motor_timer, LEFT_REVERSE, 0);
-    HAL_Delay(500);
+    HAL_Delay(200);
 
     DEBUG_PRINTF(DBG_INFO, "Testing RIGHT_FORWARD\r\n");
-    __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_FORWARD, 50);
-    HAL_Delay(2000);
+    for (uint8_t i = 0; i< 100;i++){
+        
+        __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_FORWARD, i);
+        HAL_Delay(50);
+    }
     __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_FORWARD, 0);
-    HAL_Delay(500);
+    HAL_Delay(200);
 
     DEBUG_PRINTF(DBG_INFO, "Testing RIGHT_REVERSE\r\n");
-    __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_REVERSE, 50);
-    HAL_Delay(2000);
-    __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_REVERSE, 0);
+    for (uint8_t i = 0; i< 100;i++){
+        
+        __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_REVERSE, i);
+        HAL_Delay(50);
+    }
+    Motor_FullStop();
+}
+
+
+void Motor_TestTurning(void){
+        DEBUG_PRINTF(DBG_INFO, "Testing right turn\r\n");
+    for (uint8_t i = 0; i< 100;i++){
+        __HAL_TIM_SET_COMPARE(motor_timer, LEFT_FORWARD, i);
+        __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_REVERSE, i);
+        HAL_Delay(100);
+    }
+
+    Motor_FullStop();
+
+    HAL_Delay(200);
+
+    DEBUG_PRINTF(DBG_INFO, "Testing LEFT_REVERSE\r\n");
+    for (uint8_t i = 0; i< 100;i++){
+        
+        __HAL_TIM_SET_COMPARE(motor_timer, LEFT_REVERSE, i);
+        __HAL_TIM_SET_COMPARE(motor_timer, RIGHT_FORWARD, i);
+        HAL_Delay(100);
+    }
+    Motor_FullStop();
 }

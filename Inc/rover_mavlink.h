@@ -39,6 +39,8 @@ void MAVLink_SendCmdAck(uint16_t command, uint8_t result);
 
 void MAVLink_HandleMessage(mavlink_message_t* msg);
 
+void MAVLink_SendStatusText(uint8_t severity, const char* text, uint8_t comp_id);
+
 void MAVLink_MainLoop(void);
 
 void MAVLink_SendHeartbeat(void);

@@ -260,6 +260,22 @@ void MAVLink_HandleMessage( mavlink_message_t *msg){
             }
 }
 
+void MAVLink_SendStatusText(uint8_t severity, const char* text, uint8_t comp_id){
+    mavlink_message_t msg;
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+    mavlink_msg_statustext_pack(
+        Rover_GetId(),
+        comp_id,
+        &msg,
+        severity,
+        text,
+        0,0
+    );
+
+    uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
+    MAVLink_QueueMessage(&tx_queue, buf, len);
+}
+
 void MAVLink_MainLoop(void) {
   uint8_t retry_counter = 0;
   HAL_StatusTypeDef result;

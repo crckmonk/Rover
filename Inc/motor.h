@@ -40,4 +40,6 @@ void Test_Speed_Settings(motor_Direction_t dir);
 
 void Motor_TestChannels(void);
 
+void Motor_TestTurning(void);
+
 #endif /* MOTOR_H */
