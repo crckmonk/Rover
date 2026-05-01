@@ -89,6 +89,7 @@ void Rover_FullStopSoft(){
  * 
  */
 void Rover_FullStopHard(){
+    MAVLink_SendStatusText(MAV_SEVERITY_NOTICE,"FULLSTOP",0);
     RoverState.direction = HALT;
     RoverState.left_motor = 0;
     RoverState.right_motor = 0;

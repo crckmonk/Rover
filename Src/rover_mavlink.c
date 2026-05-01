@@ -288,7 +288,7 @@ void MAVLink_MainLoop(void) {
     result = MAVLink_ProcessTXQueue();
     retry_counter++;
     HAL_Delay(1);
-  } while (result != HAL_OK || retry_counter < 6);
+  } while (result != HAL_OK && retry_counter < 6);
 }
 
 void MAVLink_SendHeartbeat(void) {
@@ -310,13 +310,11 @@ void MAVLink_SendHeartbeat(void) {
     );
     
     uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
-    while (attempt_count < 8){
-        if (ESP_SendMessage(esp_dev, buf,len) != ESP_OK){
+    for (uint8_t attempt = 0; attempt < 8; attempt++){
+        if (ESP_SendMessage(esp_dev, buf,len) == ESP_OK){
             return;
-        } else {
-            HAL_Delay(10);
-            attempt_count++;
         }
+        HAL_Delay(10);
     }
 }
 

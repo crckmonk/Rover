@@ -1,3 +1,4 @@
+<<<<<<< HEAD
  # STM32 based remotely controlled rover with MavLink support
 ## Requirements: 
 
@@ -5,6 +6,13 @@
  - 4 Wheel skid steering chassis
  - Powered by a swappable, UPS type 12V battery.
    
+=======
+# STM32 based remotely controlled rover with MavLink support
+## Requirements: 
+### Basic hardware requirements 
+ - 4 Wheel differential steering chassis
+ - Powered by a swappable, UPS type 12V battery. 
+>>>>>>> 8476b9d7b0f599e5818a386ea9eba0998ffcb771
 ### Control 
 
  - 2 Remote control channels: 
@@ -13,7 +21,10 @@
  - MavLink common messages support
  - Manual control via MavLink MANUAL_CONTROL protocol
  - Simple custom manual control protocol to be used over a fallback comms channel
+<<<<<<< HEAD
    
+=======
+>>>>>>> 8476b9d7b0f599e5818a386ea9eba0998ffcb771
 ### Telemetry
  - Battery voltage monitoring. Battery state estimation
  - Heading calculation based on magnetometer and accelerometer data
@@ -24,6 +35,7 @@
  - FPV video transmission 
  - Onboard peripherals controlled remotely(Lights, camera mount turning, ...)
 
+<<<<<<< HEAD
 
 ## Current state 03-04-26
 ### Build
@@ -52,3 +64,5 @@
  - [x] Add support  MavLink messages required to interact with QGC
  - [] Add VTX & camera ON/OFF switching capability (Hardware and relevant MAVLink message support
  
+=======
+>>>>>>> 8476b9d7b0f599e5818a386ea9eba0998ffcb771

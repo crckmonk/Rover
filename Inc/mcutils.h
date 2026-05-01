@@ -16,7 +16,7 @@ typedef enum {
 
 #define COUNT(array) (sizeof(array) / sizeof(array[0]))
 
-#define DEBUG_LEVEL DBG_VERBOSE
+#define DEBUG_LEVEL DBG_INFO
 
 
 void I2C_Scan(I2C_HandleTypeDef *hi2c);
