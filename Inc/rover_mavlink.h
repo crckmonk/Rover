@@ -9,7 +9,16 @@
 #include "control.h"
 
 
+#define HEARTBEAT_INTERVAL_MS    1000
+#define SYS_STATUS_INTERVAL_MS   1000
 
+#define RETRY_ATTEMPTS 3
+
+typedef struct {
+    uint32_t last_heartbeat;
+    uint32_t last_sys_status;
+    uint32_t last_attitude;
+} MAVLink_Scheduler_t;
 
 typedef struct {
     char     name[17];
@@ -31,7 +40,12 @@ HAL_StatusTypeDef MAVLink_ProcessTXQueue(void);
 
 void MAVLink_ProcessRxQueue(void);
 
+
 void MAVLink_HandleCommandLong(mavlink_message_t* msg);
+
+void MAVLink_SendVFRHud(void);
+
+void MAVLink_SendAttitude(void);
 
 void MAVLink_SendAutopilotVersion(void);
 

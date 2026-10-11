@@ -15,18 +15,16 @@
 #define DECLINATION_ANGLE 8.0f // Determined by location
 
 
-/* private variables */
 static I2C_HandleTypeDef *lsm303dlhc_i2c = NULL;
 static LSM303_MagGain_t lsm303dlhc_mag_magin = LSM303DLHC_MAGGAIN_1_3;
 static bool lsm303dlhc_mag_auto_range = false;
-static float lsm303dlhc_acc_mg_lsb = 0.001f;   // 1, 2, 4 or 12 mg per lsb
-static float lsm303dlhc_mag_gauss_lsb_xy = 1100.0f;  // Varies with gain
-static float lsm303dlhc_mag_gauss_lsb_z = 980.0f;   // Varies with gain
+static float lsm303dlhc_acc_mg_lsb = 0.001f;
+static float lsm303dlhc_mag_gauss_lsb_xy = 1100.0f; 
+static float lsm303dlhc_mag_gauss_lsb_z = 980.0f;   
 static LSM303_MagCalibration_t mag_cal = {0, 0, 0, 1.0f, 1.0f, 1.0f};
 static LSM303_AccCalibration_t acc_cal = {0, 0, 0};
 
 
-/* private functions */
 static LSM303_Result_t lsm303dlhc_read_i2c(uint8_t address, uint8_t reg, uint8_t *data);
 static LSM303_Result_t lsm303dlhc_write_i2c(uint8_t address, uint8_t reg, uint8_t data);
 
@@ -449,7 +447,6 @@ void LSM303_GetCalibrationData(LSM303_AccCalibration_t *accCalibration, LSM303_M
     }
 }
 
-/* private functions */
 static LSM303_Result_t lsm303dlhc_read_i2c(uint8_t address, uint8_t reg, uint8_t *data) {
     if (HAL_I2C_Master_Transmit(lsm303dlhc_i2c, address, &reg, 1, 1000) != HAL_OK) {
         return LSM303DLHC_ERROR;

@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "adc.h"
+#include "stm32f4xx_hal_adc.h"
 
 /* USER CODE BEGIN 0 */
 
@@ -124,6 +125,22 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* adcHandle)
 }
 
 /* USER CODE BEGIN 1 */
+uint16_t ADC_ReadBattmv(void)
+{
+  uint32_t adcSum = 0;
+  uint32_t voltage_mV;
+  
+  for (uint8_t i = 0; i < 4; i++) {
+    HAL_ADC_Start(&hadc1);
+    HAL_ADC_PollForConversion(&hadc1, 100);
+    adcSum += HAL_ADC_GetValue(&hadc1);
+    HAL_ADC_Stop(&hadc1);
+  }
+  uint16_t adcValue = adcSum / 4;
 
+  // Multiplier = 570 / 100 = 5.7
+  voltage_mV = (uint32_t)adcValue * 3300 * 57 / 4096 / 10;
+  return (uint16_t)voltage_mV;
+}
 /* USER CODE END 1 */
 

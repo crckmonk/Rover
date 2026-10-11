@@ -41,6 +41,7 @@ extern ADC_HandleTypeDef hadc1;
 void MX_ADC1_Init(void);
 
 /* USER CODE BEGIN Prototypes */
+uint16_t ADC_ReadBattmv(void);
 
 /* USER CODE END Prototypes */
 

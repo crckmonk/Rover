@@ -68,6 +68,7 @@ void MX_USART6_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 void _putchar(char character);
+UART_Status_t UART1_SendData(uint8_t* data, uint32_t size);
 UART_Status_t UART_SendByte(volatile UART_Buffers_t* uart, uint8_t byte);
 UART_Status_t UART_SendData(volatile UART_Buffers_t* uart, uint8_t* data, uint32_t size);
 uint8_t UART_GetByte(volatile UART_Buffers_t *uart);

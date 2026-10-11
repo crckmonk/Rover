@@ -33,7 +33,8 @@
 //#include "NRF24/ESP8266.h"
 #include "global_config.h"
 #include "motor.h"
-
+#include "scheduler.h"
+#include "sensors.h"
 
 /* USER CODE END Includes */
 
@@ -82,60 +83,15 @@ float heading = 0.0f;
 
 uint16_t adc_vbat_raw = 0;
 
-
 volatile uint8_t send_heartbeat = 0;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   if (htim->Instance == TIM3) {
-    send_heartbeat = 1;
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+    //send_heartbeat = 1;
+    //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
   }
 }
-uint16_t readBatt(void)
-{
-  uint16_t adcValue;
-  uint32_t voltage_mV;
-  
-  HAL_ADC_Start(&hadc1);
-  HAL_ADC_PollForConversion(&hadc1, 100);
-  adcValue = HAL_ADC_GetValue(&hadc1);
-  HAL_ADC_Stop(&hadc1);
 
-  // Multiplier = 1 240 000 / 240 000 = 5.1
-  voltage_mV = (uint32_t)adcValue * 3300 * 31 / 4096 / 6;
-  return (uint16_t)voltage_mV;
-}
-
-
-void TEMP_MagnetometerInit(void){
-    printf("Initializing lsm303\r\n");
-
-  LSM303_AccInit_t lsm303dlhc_acc_init = { 0 };
-	LSM303_MagInit_t lsm303dlhc_mag_init = { 0 };
-	
-	lsm303dlhc_acc_init.ctrl_reg1_a = LSM303DLHC_ACR1A_XEN | LSM303DLHC_ACR1A_YEN | LSM303DLHC_ACR1A_ZEN | LSM303DLHC_ACR1A_ODR30_100_HZ;
-	lsm303dlhc_acc_init.ctrl_reg4_a = LSM303DLHC_ACR4A_FS10_1MG;
-	
-	lsm303dlhc_mag_init.op = LSM303DLHC_MAGOP_CONT;
-	lsm303dlhc_mag_init.rate = LSM303DLHC_MAGRATE_15;
-	lsm303dlhc_mag_init.gain = LSM303DLHC_MAGGAIN_1_3;
-	lsm303dlhc_mag_init.auto_range = false;
-
-
-
-  if (LSM303_InitAcc(&hi2c1, &lsm303dlhc_acc_init) != LSM303DLHC_OK) {
-    printf("LSM303DLHC Accel Init Error\r\n");
-    }
-
-	if (LSM303_InitMag(&hi2c1, &lsm303dlhc_mag_init) != LSM303DLHC_OK) {
-		printf("LSM303DLHC Mag Init Error\r\n");
-	}
-
-    printf("Accelerometer Calibration done\r\nCalibrating magnetometer arount Z axis\r\n");
-  LSM303_2DMagCalibration(20);
-
-  printf("Continuos magnetometer calibration mode\r\n");
-}
 
 void TEMP_MagnetometerMainLoop(void){
       if (LSM303_ReadAccRaw(&accData_raw) == LSM303DLHC_OK) {
@@ -213,7 +169,7 @@ int main(void)
 
   ESP_Handler_t esp_dev;
 
-
+I2C_Scan(&hi2c1);
   Motor_Init(&htim2);
 
 
@@ -227,6 +183,8 @@ int main(void)
   HAL_UART_Receive_IT(&huart6, &esp_dev.uart_buffers->RxByte, 1);
   
   MAVLink_Init(&esp_dev);
+  Sensors_Init();
+  Scheduler_Init();
 
   while (  ESP_WifiStationConnect(&esp_dev) != ESP_OK) {
     DEBUG_PRINTF(DBG_ERROR, "Failed to connect, retrying...\r\n");
@@ -238,7 +196,6 @@ int main(void)
   DEBUG_PRINTF(DBG_INFO, "ESP Initialized successfully\r\n");
   DEBUG_PRINTF(DBG_VERBOSE, "RX Buffer: %s\r\n", esp_dev.rx_buffer);
   DEBUG_PRINTF(DBG_INFO, "Transmitting heartbeat\r\n");
-  HAL_TIM_Base_Start_IT(&htim3);
 
 
 
@@ -246,19 +203,18 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
+  Scheduler_AddTask(MAVLink_SendHeartbeat, 1000);
+  Scheduler_AddTask(MAVLink_SendSysStatus, 1000);    // 1Hz
+  Scheduler_AddTask(MAVLink_SendVFRHud, 500);
+  Scheduler_AddTask(MAVLink_SendAttitude, 500);
+  Scheduler_AddTask(Sensors_Update, 50);
   MX_IWDG_Init();
   while (1)
   { 
     ESP_MainLoop(&esp_dev);
-    if (send_heartbeat) {
-      Rover_SetVBat(readBatt());
-      MAVLink_SendHeartbeat();
-      MAVLink_SendSysStatus();
-      send_heartbeat = 0;
-    }
     MAVLink_MainLoop();
     Rover_ApplyControlState();
+    Scheduler_Run();
     HAL_IWDG_Refresh(&hiwdg);
     /* USER CODE END WHILE */
 

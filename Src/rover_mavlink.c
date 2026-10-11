@@ -1,14 +1,15 @@
 #include "rover_mavlink.h"
-
+#include "sensors.h"
 
 static ESP_Handler_t* esp_dev = NULL;
 
-static volatile uint8_t          manual_ctrl_pending = 0;
+static volatile uint8_t          ctrl_pending_flag = 0;
 static mavlink_manual_control_t  pending_manual_ctrl;
 
 static Queue_t tx_queue = {0};
 static Queue_t rx_queue = {0};
 
+static MAVLink_Scheduler_t sched = {0};
 
 
 
@@ -27,7 +28,6 @@ void MAVLink_Init(ESP_Handler_t* dev) {
 static uint8_t MAVLink_QueueMessage(Queue_t* queue,uint8_t *data, uint16_t len) {
     return Queue_Enqueue(queue, data, len);
 }
-
 uint8_t MAVLink_QueueRxMessage( uint8_t *data, uint16_t len) {
     return Queue_Enqueue(&rx_queue, data, len);
 }
@@ -35,7 +35,6 @@ uint8_t MAVLink_QueueRxMessage( uint8_t *data, uint16_t len) {
 uint8_t MAVLink_QueueTxMessage(uint8_t *data, uint16_t len) {
     return Queue_Enqueue(&tx_queue, data, len);
 }
-
 
 
 void MAVLink_SendParamValue(uint16_t index) {
@@ -49,8 +48,8 @@ void MAVLink_SendParamValue(uint16_t index) {
         params[index].name,   // param_id (char[16])
         params[index].value,  // param_value (float)
         params[index].type,   // param_type
-        COUNT(params),          // param_count — total number
-        index                 // param_index — this one's index
+        COUNT(params),          // param_count 
+        index                 // param_index 
     );
 
     uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
@@ -59,6 +58,13 @@ void MAVLink_SendParamValue(uint16_t index) {
 
 
 
+void MAVLink_SendToOSD(mavlink_message_t *msg) {
+    mavlink_status_t *status = mavlink_get_channel_status(MAVLINK_COMM_1);
+    status->flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1; //Minim OSD uses Mavlink v1
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+    uint16_t len = mavlink_msg_to_send_buffer(buf, msg);
+    return UART1_SendData(buf,len);
+}
 
 
 HAL_StatusTypeDef MAVLink_ProcessTXQueue(void) {
@@ -84,6 +90,7 @@ void MAVLink_ProcessRxQueue(void){
         Queue_Dequeue(&rx_queue);
     }
 }
+
 
 
 void MAVLink_HandleCommandLong(mavlink_message_t* msg) {
@@ -139,6 +146,49 @@ void MAVLink_HandleCommandLong(mavlink_message_t* msg) {
         MAVLink_SendCmdAck(cmd.command, result);
     }
     
+}
+
+void MAVLink_SendVFRHud(void) {
+    mavlink_message_t msg;
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+
+    mavlink_msg_vfr_hud_pack(
+        Rover_GetId(), MAV_COMP_ID_AUTOPILOT1, &msg,
+        0.0f,         // airspeed (m/s)
+        5.0f,         // groundspeed (m/s)
+        (int16_t)30,  // heading 0-359 degrees
+        100,            // throttle 0-100%
+        10.0f,         // altitude (m)
+        0.0f          // climb rate (m/s)
+    );
+
+    MAVLink_SendToOSD(&msg);
+    uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
+    MAVLink_QueueMessage(&tx_queue, buf, len);
+}
+
+void MAVLink_SendAttitude(void) {
+    mavlink_message_t msg;
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+    
+    float heading_rad = Sensors_GetHeading() * 3.14159f / 180.0f;
+    
+    mavlink_msg_attitude_pack(
+        Rover_GetId(),
+        MAV_COMP_ID_AUTOPILOT1,
+        &msg,
+        HAL_GetTick(),    // time_boot_ms
+        0.0f,             // roll (radians)
+        0.0f,             // pitch (radians)
+        heading_rad,      // yaw (radians) - THIS IS YOUR HEADING
+        0.0f,             // rollspeed (rad/s)
+        0.0f,             // pitchspeed (rad/s)
+        0.0f              // yawspeed (rad/s)
+    );
+    
+    MAVLink_SendToOSD(&msg);
+    uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
+    MAVLink_QueueMessage(&tx_queue, buf, len);
 }
 
 void MAVLink_SendAutopilotVersion(void) {
@@ -251,7 +301,7 @@ void MAVLink_HandleMessage( mavlink_message_t *msg){
                     mavlink_msg_manual_control_decode(msg, &manual);
                     if (manual.target != Rover_GetId()) {break;}
                     pending_manual_ctrl = manual;
-                    manual_ctrl_pending = 1;
+                    ctrl_pending_flag = 1;
                     break;
                     }
                 default:
@@ -280,8 +330,8 @@ void MAVLink_MainLoop(void) {
   uint8_t retry_counter = 0;
   HAL_StatusTypeDef result;
   MAVLink_ProcessRxQueue();
-  if (manual_ctrl_pending) {
-    manual_ctrl_pending = 0;
+  if (ctrl_pending_flag) {
+    ctrl_pending_flag = 0;
     Rover_ProcessManualCtrl(&pending_manual_ctrl);
   }
   do {
@@ -295,8 +345,9 @@ void MAVLink_SendHeartbeat(void) {
 /*
 * Keeping this a direct send to keep timing
 */
+
+    HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
     mavlink_message_t msg;
-    uint8_t attempt_count = 0;
     uint8_t buf[MAVLINK_MAX_PACKET_LEN];
     mavlink_msg_heartbeat_pack(
         Rover_GetId(),           
@@ -309,8 +360,9 @@ void MAVLink_SendHeartbeat(void) {
         Rover_GetState()
     );
     
+    MAVLink_SendToOSD(&msg);
     uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
-    for (uint8_t attempt = 0; attempt < 8; attempt++){
+    for (uint8_t attempt = 0; attempt < RETRY_ATTEMPTS; attempt++){
         if (ESP_SendMessage(esp_dev, buf,len) == ESP_OK){
             return;
         }
@@ -323,15 +375,16 @@ void MAVLink_SendSysStatus(void) {
     uint8_t buf[MAVLINK_MAX_PACKET_LEN];
     mavlink_msg_sys_status_pack(
         Rover_GetId(), MAV_COMP_ID_AUTOPILOT1, &msg,
-        0,              // onboard_control_sensors_present
-        0,              // onboard_control_sensors_enabled
-        0,              // onboard_control_sensors_health
+        MAV_SYS_STATUS_SENSOR_BATTERY | MAV_SYS_STATUS_SENSOR_3D_MAG,              // onboard_control_sensors_present
+        MAV_SYS_STATUS_SENSOR_BATTERY | MAV_SYS_STATUS_SENSOR_3D_MAG,              // onboard_control_sensors_enabled
+        MAV_SYS_STATUS_SENSOR_BATTERY | MAV_SYS_STATUS_SENSOR_3D_MAG,              // onboard_control_sensors_health
         500,            // load (0.1%)
-        Rover_GetVBat(),  // voltage_battery (mV)
+        Sensors_GetBatterymv(),  // voltage_battery (mV)
         0.1 * 100,   // current_battery (cA)
         100,       // battery_remaining (%)
         0, 0, 0, 0, 0, 0, 0, 0,0
     );
+    MAVLink_SendToOSD(&msg);
     uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
     MAVLink_QueueMessage(&tx_queue, buf, len);
 }
